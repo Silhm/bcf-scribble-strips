@@ -1,21 +1,14 @@
 #include <SPI.h>
 #include <Wire.h>
+
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-
-#define OLED_RESET 4
-
-
 #include <MIDI.h>
 
-MIDI_CREATE_DEFAULT_INSTANCE();
-
-Adafruit_SSD1306 display(OLED_RESET);
-
-
-#define LOGO16_GLCD_HEIGHT 16 
-#define LOGO16_GLCD_WIDTH  16 
-
+//Oled related
+#define OLED_RESET 4
+#define LOGO16_GLCD_HEIGHT 16
+#define LOGO16_GLCD_WIDTH  16
 // character dimensions (for aligning text)
 #define CH_WID 6
 #define CH_HEI 8
@@ -25,6 +18,10 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define DP_WID_MID 64
 #define DP_HEI_MID 16
 
+Adafruit_SSD1306 display(OLED_RESET);
+
+MIDI_CREATE_DEFAULT_INSTANCE();
+#define   MIDI_NAMESPACE   midi
 
 static const unsigned char PROGMEM logo16_glcd_bmp[] =
 { B00000000, B11000000,
@@ -42,144 +39,222 @@ static const unsigned char PROGMEM logo16_glcd_bmp[] =
   B00111111, B11110000,
   B01111100, B11110000,
   B01110000, B01110000,
-  B00000000, B00110000 };
+  B00000000, B00110000
+};
 
 #if (SSD1306_LCDHEIGHT != 32)
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
+//MIDI buffer
+byte buffer[10];
 
 
+/**
+   Board Setup
+*/
 void setup() {
 
   MIDI.begin(MIDI_CHANNEL_OMNI);
-  
-  // As of the MIDI Library v3.1, the lib uses C style function 
-  // pointers to create a callback system for handling input events. 
-  //MIDI.setHandleNoteOn(HandleNoteOn); 
-  MIDI.setHandleControlChange(HandleCC);
+
+  // MIDI callback system for handling input events.
+  //MIDI.setHandleNoteOn(HandleNoteOn);
+  //MIDI.setHandleControlChange(HandleCC);
   //MIDI.setHandleNoteOff(HandleNoteOff);
+  //MIDI.setHandleSystemExclusive(HandleSysEx);
 
-
-  
-  // put your setup code here, to run once:
   Serial.begin(9600);
 
   // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
-  // init done
-  
+
   // Show image buffer on the display hardware.
   // Since the buffer is intialized with an Adafruit splashscreen
   // internally, this will display the splashscreen.
   display.display();
   delay(1);
+  display.clearDisplay();
 
-   // Clear the buffer.
-   display.clearDisplay();
-
-//line1
+  // Loading message
   display.setTextColor(WHITE);
-  displayMainText("Kick");
-  
-//line2
-  //display.setCursor(0,10);
-  
-  //displayParameter("volume","42dB");
-    display.setTextSize(1);
-
-   display.clearDisplay();
-
-   display.setCursor(0,0);
-   display.print("note On  :");
-   display.setCursor(0,CH_HEI);
-   display.print("note Off :");
-   display.setCursor(0,CH_HEI*2);
-   display.print("CC       :");
-
-
-
-
-
-    
-  display.display();
-  delay(1);
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  MIDI.read();
-   
-  /*
-    display.clearDisplay();
-     displayMainText("Kick");
-     displayParameter("volume","");
-     
-  for(int16_t i=0; i<100; i+=1) {
-     display.drawLine(display.getCursorX()+i, display.getCursorY(), display.getCursorX()+i, display.getCursorY()+CH_HEI, WHITE);
-     display.display();
-     delay(1);
-  }
-
-*/
-}
-
-
-//Display Kick / Snare / bass etc
-void displayMainText(const char * text){
-   display.setCursor(0,0);
-   display.setTextSize(3);
-   centerText(text);
-}
-
-void centerText(const char * text){
-  display.setCursor(DP_WID_MID - (3 * CH_WID * 2),display.getCursorY());
-  display.println(text);
-}
-
-void displayParameter(const char * param,const char * value){
-  //display.setCursor(DP_WID_MID - (3 * CH_WID * 2),display.getCursorY());
+  display.setCursor(0, 0);
+  display.setTextSize(2);
+  display.println("BCF 2000");
   display.setTextSize(1);
-  display.print(param);
-  display.print(": ");
-  display.print(value);
+  display.print("Init: ");
+  for (int16_t i = 0; i < 100; i += 1) {
+    display.drawLine(display.getCursorX() + i, display.getCursorY(), display.getCursorX() + i, display.getCursorY() + CH_HEI, WHITE);
+    display.display();
+    delay(1);
+  }
+  display.print("OK!");
+  display.display();
+  delay(100);
+  display.clearDisplay();
+  display.drawPixel(10, 10, WHITE);
+  display.display();
+}
+
+const byte * toto;
+
+
+enum MidiType{
+  InvalidType           = 0x00,    
+  NoteOff               = 0x80,    
+  NoteOn                = 0x90,    
+  AfterTouchPoly        = 0xA0,    
+  ControlChange         = 0xB0,    
+  ProgramChange         = 0xC0,    
+  AfterTouchChannel     = 0xD0,    
+  PitchBend             = 0xE0,    
+  SystemExclusive       = 0xF0,    
+  TimeCodeQuarterFrame  = 0xF1,   // 241 
+  SongPosition          = 0xF2,    
+  SongSelect            = 0xF3,    
+  TuneRequest           = 0xF6,    
+  Clock                 = 0xF8,    
+  Start                 = 0xFA,    
+  Continue              = 0xFB,    
+  Stop                  = 0xFC,    
+  ActiveSensing         = 0xFE,    
+  SystemReset           = 0xFF,    
+};
+
+
+/**
+   MAIN loop, mostly reading MIDI messages
+*/
+void loop() {
+
+
+
+  //PING Mackie HUI protocol on DAW
+  // note on, key 0, velocity 0
+  //MIDI.sendNoteOn(0,0,1);
+
+  
+  // Reading MIDI messages, // not handling them via Callback
+  MIDI.read();
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.display();
+  switch (MIDI.getType()) {
+    case 0xB0:
+      display.print("CC");
+     break;
+    case 0xF0:
+      display.setCursor(0, CH_HEI*2); //display IT on 3rd line
+      display.print("SysEx");
+     break;
+    case 0x80:
+      display.print("NoteOff");
+     break;
+    case 0x90:
+      display.print("NoteOn");
+     break;
+    case 0xFE:
+      display.print("ActiveSensing");
+     break;
+    case 0xC0:
+      display.print("PC");
+     break;
+    case 0xA0:
+      display.print("AfterTouchPoly");
+     break;
+    case 0xD0:
+      display.print("AfterTouchChannel");
+     break;
+    case 0xFC:
+      display.print("Stop");
+     break;
+    case 0xFF:
+      display.print("SystemReset");
+     break;
+    case 0xE0:
+      display.print("PitchBend");
+     break;
+    default:
+      display.setCursor(0, CH_HEI);
+      display.print(MIDI.getType());
+      break;
+  }
+  
+  display.display();
+  //display.print(MIDI.getSysExArrayLength());
+
+
+   /*
+  for (int16_t i = 0; i < MIDI.getSysExArrayLength(); i += 1) {
+    display.print(toto[i]);
+  }
+  */
+  display.display();
+  
 }
 
 
-/*
-void HandleNoteOn(byte channel, byte pitch, byte velocity) 
-{ 
-  // Do something here with your data!
-   display.setCursor(7 * CH_WID ,0);
-   display.print("      ");
-   display.setCursor(7 * CH_WID ,0);
-   display.print(pitch);
-   //display.display();
-   
-}
 
-void HandleNoteOff(byte channel, byte pitch, byte velocity) 
+/**
+   MIDI CC
+*/
+void HandleCC(byte channel, byte pitch, byte velocity)
 {
   // Do something here with your data!
-   display.setCursor(7 * CH_WID ,CH_HEI);
-   display.print("      ");
-   display.setCursor(7 * CH_WID ,CH_HEI);
-   display.print(pitch);
-   //display.display();
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("MIDI CC");
+  display.print(channel);
+  display.print(":");
+  display.print(pitch);
+  display.print(":");
+  display.println(velocity);
+  display.display();
 
-}*/
+  /*
+     if(channel == 0xa0){
+        display.clearDisplay();
+        display.setCursor(0,0);
+        display.setTextSize(3);
+        display.println("woot");
 
-void HandleCC(byte channel, byte pitch, byte velocity) 
-{
-  // Do something here with your data!
-   display.clearDisplay();
-   display.setCursor(0,0);
-   display.setTextSize(3);
-   display.println(pitch);
-   display.setTextSize(1);
-   display.println(velocity);
-   display.display();
+        display.setTextSize(1);
+        if(pitch == 0){
+             display.print("L :");
+             display.print(velocity);
+        }
+        else{
+             display.print("R : ");
+             display.print(velocity);
 
-   
+        }
+
+
+        display.display();
+     }
+  */
 }
+
+
+/**
+   MIDI SysEx
+*/
+void HandleSysEx(byte *array, unsigned size) {
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("SysEx");
+  display.print(array[0]);
+  display.display();
+
+
+}
+
+
+
+
+
+
+
+
+
 

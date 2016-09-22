@@ -1,9 +1,20 @@
+
+
 #include <SPI.h>
 #include <Wire.h>
+#include <stdio.h>
+
+
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <midi_Namespace.h>
 #include <MIDI.h>
+#include <midi_Message.h>
+#include <midi_Defs.h>
+#include <midi_Settings.h>
+
+
 
 //Oled related
 #define OLED_RESET 4
@@ -55,15 +66,16 @@ byte buffer[10];
 */
 void setup() {
 
-  MIDI.begin(MIDI_CHANNEL_OMNI);
+   MIDI.begin();
+   MIDI.turnThruOff();
+   MIDI.setHandleSystemExclusive(handleSysEx);
 
   // MIDI callback system for handling input events.
   //MIDI.setHandleNoteOn(HandleNoteOn);
   //MIDI.setHandleControlChange(HandleCC);
   //MIDI.setHandleNoteOff(HandleNoteOff);
-  //MIDI.setHandleSystemExclusive(HandleSysEx);
 
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
@@ -95,101 +107,15 @@ void setup() {
   display.display();
 }
 
-const byte * toto;
-
-
-enum MidiType{
-  InvalidType           = 0x00,    
-  NoteOff               = 0x80,    
-  NoteOn                = 0x90,    
-  AfterTouchPoly        = 0xA0,    
-  ControlChange         = 0xB0,    
-  ProgramChange         = 0xC0,    
-  AfterTouchChannel     = 0xD0,    
-  PitchBend             = 0xE0,    
-  SystemExclusive       = 0xF0,    
-  TimeCodeQuarterFrame  = 0xF1,   // 241 
-  SongPosition          = 0xF2,    
-  SongSelect            = 0xF3,    
-  TuneRequest           = 0xF6,    
-  Clock                 = 0xF8,    
-  Start                 = 0xFA,    
-  Continue              = 0xFB,    
-  Stop                  = 0xFC,    
-  ActiveSensing         = 0xFE,    
-  SystemReset           = 0xFF,    
-};
-
-
 /**
    MAIN loop, mostly reading MIDI messages
 */
 void loop() {
-
-
-
-  //PING Mackie HUI protocol on DAW
-  // note on, key 0, velocity 0
-  //MIDI.sendNoteOn(0,0,1);
-
+  // Reading MIDI messages, 
   
-  // Reading MIDI messages, // not handling them via Callback
   MIDI.read();
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.display();
-  switch (MIDI.getType()) {
-    case 0xB0:
-      display.print("CC");
-     break;
-    case 0xF0:
-      display.setCursor(0, CH_HEI*2); //display IT on 3rd line
-      display.print("SysEx");
-     break;
-    case 0x80:
-      display.print("NoteOff");
-     break;
-    case 0x90:
-      display.print("NoteOn");
-     break;
-    case 0xFE:
-      display.print("ActiveSensing");
-     break;
-    case 0xC0:
-      display.print("PC");
-     break;
-    case 0xA0:
-      display.print("AfterTouchPoly");
-     break;
-    case 0xD0:
-      display.print("AfterTouchChannel");
-     break;
-    case 0xFC:
-      display.print("Stop");
-     break;
-    case 0xFF:
-      display.print("SystemReset");
-     break;
-    case 0xE0:
-      display.print("PitchBend");
-     break;
-    default:
-      display.setCursor(0, CH_HEI);
-      display.print(MIDI.getType());
-      break;
-  }
   
-  display.display();
-  //display.print(MIDI.getSysExArrayLength());
 
-
-   /*
-  for (int16_t i = 0; i < MIDI.getSysExArrayLength(); i += 1) {
-    display.print(toto[i]);
-  }
-  */
-  display.display();
-  
 }
 
 
@@ -203,52 +129,89 @@ void HandleCC(byte channel, byte pitch, byte velocity)
   display.clearDisplay();
   display.setCursor(0, 0);
   display.println("MIDI CC");
-  display.print(channel);
-  display.print(":");
-  display.print(pitch);
-  display.print(":");
-  display.println(velocity);
   display.display();
-
-  /*
-     if(channel == 0xa0){
-        display.clearDisplay();
-        display.setCursor(0,0);
-        display.setTextSize(3);
-        display.println("woot");
-
-        display.setTextSize(1);
-        if(pitch == 0){
-             display.print("L :");
-             display.print(velocity);
-        }
-        else{
-             display.print("R : ");
-             display.print(velocity);
-
-        }
-
-
-        display.display();
-     }
-  */
 }
 
 
 /**
    MIDI SysEx
 */
-void HandleSysEx(byte *array, unsigned size) {
-
+void handleSysEx(byte * sysEx, unsigned buffSize) {
+  //header f0 00 00 66 05 00 
+  //       
   display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("SysEx");
-  display.print(array[0]);
+
+
+  if(sysEx[5] == 0x12){
+    handleScribble(sysEx, buffSize);
+  }
+ 
+
+  /*
+  if(sysEx[5] == 0x20){
+    // <hdr> 20 05 00 <eof>
+    handleMetering(sysEx, buffSize);
+  }
+  */
+  
+
+
   display.display();
-
-
 }
 
+
+/**
+ * LCD message should be processed here
+ */
+void handleScribble(byte *sysEx, unsigned buffSize){
+    byte offset = sysEx[6];
+    // Start to get the display to update (0->7)
+    int displayId = getDisplayId(sysEx);
+    
+
+    if(displayId == 0){
+      // Get position on the display
+      if(offset>=0 && offset <= 37){
+          //first line 
+          display.setTextSize(2); 
+          display.setCursor(0,0);
+      }
+      else{ //38->6C second line
+          //second line
+          display.setTextSize(2);
+          display.setCursor(0,CH_HEI*2);
+          display.setCursor(DP_WID_MID - (3 * CH_WID * 2),display.getCursorY()); // Center text on OLED
+         
+      }   
+  
+      //Display the message 
+      for (int16_t i = 7; i < buffSize-1; i ++) {
+          display.write(sysEx[i]); //write to convert Byte as char
+      }   
+    }
+}
+
+
+void handleMetering(byte *sysEx, unsigned buffSize){
+    //TODO
+    byte offset = sysEx[6];
+    // Start to get the display to update (0->7)
+    int displayId = getDisplayId(sysEx);
+     display.setTextSize(2); 
+     display.setCursor(0,0);
+    
+     display.write(sysEx[7]); //write to convert Byte as char
+     display.write(sysEx[8]); //write to convert Byte as char
+}
+
+
+/**
+ * Get Display id
+ */
+int getDisplayId(byte *sysEx){
+    int offset = (sysEx[6] / 7) ; // 7char per display
+    return offset % 8 ; // only 8 displays available
+}
 
 
 

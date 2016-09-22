@@ -1,0 +1,79 @@
+Analyse and dev
+----------------------------------------------------------
+SysEx message
+
+<hdr> =  5 chars : F0 00 00 66 00
+<hdr> 12 00 48 65 6C 6C 6F F7
+offest 0 /   H  e  l  l  o                
+
+Example:
+<hdr>  12 z1 g0 g1 g2 g3 g4 g5 g6 g7 g8 g9
+         [z2 h0 h1 h2 h3 h4 h5 h6 h7 h8 h9]
+         [z3 i0 i1 i2 i3 i4 i5 i6 i7 i8 i9]
+         [z4 j0 j1 j2 j3 j4 j5 j6 j7 j8 j9] f7
+
+          38| 4C 35 31 52 34 39 20        L 5 1 R 4 9 _
+          3F| 4C 35 30 52 35 30 20        L 5 0 R 5 0 _
+          46| 4C 35 30 52 35 30 20       
+          4D| 4C 35 30 52 35 30 20       
+          54| 4C 35 30 52 35 30 20       
+          5B| 4C 35 30 52 35 30 20       
+          62| 4C 35 30 52 35 30 20       
+          69| 4C 35 30 52 35 30 20       
+
+
+
+/************************************************************************/
+On SysEx received:
+    > substring header(5bytes)
+    > switch SysEx[5] {
+        case 0x12:
+            //Handle Scribble with remaining data
+           break; 
+        case 0x10:
+           //Handle TimeCodeDisplay
+           break;
+        case 0x20:
+           //Handle VuMeter
+           break;
+        default:
+           break;   
+    }
+
+/************************************************************************/
+// Handle Scribble function
+void handleScribble(byte *sysEx, unsigned size){
+    offset = sysEx[6]; 
+    // Start to get the display to update (0->7)
+    int displayId = getDisplay(sysEx);
+
+    // Get position on the display 
+    if(offset>=0 && offset <= 37){
+        //first line 
+        display.setTextSize(2);
+        display.setCursor(0,0);
+    }
+    else{ //38->6C second line
+        //second line
+        display.setTextSize(1);
+        display.setCursor(0,CH_HEI*2); 
+    }
+
+    //Display the message
+    for (int16_t i = 7; i < size; i ++) {
+        display.write(sysEx[i]); //write to convert Byte as char
+    }
+    display.display();
+}   
+/************************************************************************/
+// from 0->7
+int getDisplay(byte *sysEx){
+    int offset = (sysEx[6] / 7) ; // 7char per display
+    return offset % 8 ; // only 8 displays available
+}
+
+
+
+
+
+

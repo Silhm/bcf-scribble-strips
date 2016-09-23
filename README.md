@@ -8,10 +8,10 @@ Wiki : https://github.com/Silhm/bcf-scribble-strips/wiki
 
 * [✓] Compatible with Arduino boards UNO and MEGA (No clone or ftdi version compatibility).
 * [✓] Device recognized as a MIDI device on USB connection
-* [~] Display informations on OLED screens
-* [TODO] Receive SysEx from Mackie HUI protocol and display accordingly
+* [✓] Display informations on OLED screens
+* [✓] Receive SysEx from Mackie HUI protocol and display accordingly
 * [TODO] Add more Scribble strips (at least 8, for the 8 channels of the BCF 2000)
-* [TODO] Switch the displayed parameter as it changes (i.e : touching PAN switches to PAN view)
+* [✓] Switch the displayed parameter as it changes (i.e : touching PAN switches to PAN view)
 * [TODO] Add vu-meters on each channel
 
 

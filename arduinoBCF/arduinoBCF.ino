@@ -58,17 +58,19 @@ static const unsigned char PROGMEM logo16_glcd_bmp[] =
 #endif
 
 //MIDI buffer
-byte buffer[10];
+static byte *lastSysEx;
 
+
+static bool overload = false;
 
 /**
    Board Setup
 */
 void setup() {
 
-   MIDI.begin();
-   MIDI.turnThruOff();
-   MIDI.setHandleSystemExclusive(handleSysEx);
+  MIDI.begin();
+  MIDI.turnThruOff();
+  MIDI.setHandleSystemExclusive(handleSysEx);
 
   // MIDI callback system for handling input events.
   //MIDI.setHandleNoteOn(HandleNoteOn);
@@ -111,11 +113,18 @@ void setup() {
    MAIN loop, mostly reading MIDI messages
 */
 void loop() {
-  // Reading MIDI messages, 
-  
+  // Reading MIDI messages,
+
   MIDI.read();
   
-
+  byte data = MIDI.getData1();
+  
+  if(MIDI.getType() == 0xD0){ //metering?
+    if(data != 0){
+      handleMetering(data);
+    }   
+  }
+  
 }
 
 
@@ -137,80 +146,91 @@ void HandleCC(byte channel, byte pitch, byte velocity)
    MIDI SysEx
 */
 void handleSysEx(byte * sysEx, unsigned buffSize) {
-  //header f0 00 00 66 05 00 
-  //       
-  display.clearDisplay();
+  //header f0 00 00 66 05 00
+  //
 
-
-  if(sysEx[5] == 0x12){
+  if (sysEx[5] == 0x12) {
     handleScribble(sysEx, buffSize);
   }
- 
 
-  /*
-  if(sysEx[5] == 0x20){
-    // <hdr> 20 05 00 <eof>
-    handleMetering(sysEx, buffSize);
-  }
-  */
-  
-
-
-  display.display();
 }
 
 
 /**
- * LCD message should be processed here
- */
-void handleScribble(byte *sysEx, unsigned buffSize){
-    byte offset = sysEx[6];
-    // Start to get the display to update (0->7)
-    int displayId = getDisplayId(sysEx);
-    
+   LCD message should be processed here
+*/
+void handleScribble(byte *sysEx, unsigned buffSize) {
+  byte offset = sysEx[6];
+  // Start to get the display to update (0->7)
+  int displayId = getDisplayId(sysEx);
 
-    if(displayId == 0){
-      // Get position on the display
-      if(offset>=0 && offset <= 37){
-          //first line 
-          display.setTextSize(2); 
-          display.setCursor(0,0);
-      }
-      else{ //38->6C second line
-          //second line
-          display.setTextSize(2);
-          display.setCursor(0,CH_HEI*2);
-          display.setCursor(DP_WID_MID - (3 * CH_WID * 2),display.getCursorY()); // Center text on OLED
-         
-      }   
-  
-      //Display the message 
-      for (int16_t i = 7; i < buffSize-1; i ++) {
-          display.write(sysEx[i]); //write to convert Byte as char
-      }   
+
+  if (displayId == 0) {
+    display.clearDisplay();
+    // Get position on the display
+    if (offset >= 0x00 && offset <= 0x37) {
+      //first line
+      display.setTextSize(2);
+      display.setCursor(0, 0);
     }
+    else if (offset <= 0x6C) { //38->6C second line
+      //second line
+      display.setTextSize(2);
+      display.setCursor(0, CH_HEI * 2);
+      display.setCursor(DP_WID_MID - (3 * CH_WID * 2), display.getCursorY()); // Center text on OLED
+
+    }
+
+    //Display the message
+    for (int16_t i = 7; i < buffSize - 1; i ++) {
+      display.write(sysEx[i]); //write to convert Byte as char
+    }
+    display.display();
+  }
 }
 
 
-void handleMetering(byte *sysEx, unsigned buffSize){
-    //TODO
-    byte offset = sysEx[6];
-    // Start to get the display to update (0->7)
-    int displayId = getDisplayId(sysEx);
-     display.setTextSize(2); 
-     display.setCursor(0,0);
-    
-     display.write(sysEx[7]); //write to convert Byte as char
-     display.write(sysEx[8]); //write to convert Byte as char
+void handleMetering(byte data) {
+      int fullScale = DP_WID;
+
+      byte chan = data & 0xf0; // from 0 to 7
+      //TODO handle multiple displays
+      
+      byte level = data & 0x0f; // 0-> 0% , C-> 100%
+      int meterVal = (level * fullScale) / 0x0C;
+      
+      display.clearDisplay();
+      display.setCursor(0,0);
+      
+      for (int16_t i = 0; i < meterVal; i += 1) {
+          display.drawLine(display.getCursorX() + i, display.getCursorY(), display.getCursorX() + i, display.getCursorY() + CH_HEI, WHITE);
+      }
+
+      // Set Overload
+      if(level == 0x0E){
+        overload = true;
+      }
+      // unset Overload
+      if(level == 0x0F){
+         overload = false;
+      }
+      if(overload){
+        display.setTextSize(1);
+        display.println(" "); 
+        display.print("OVERLOAD!!!!!"); //set overload
+      }
+      
+      delay(50);  
+      display.display();
 }
 
 
 /**
- * Get Display id
- */
-int getDisplayId(byte *sysEx){
-    int offset = (sysEx[6] / 7) ; // 7char per display
-    return offset % 8 ; // only 8 displays available
+   Get Display id
+*/
+int getDisplayId(byte *sysEx) {
+  int offset = (sysEx[6] / 7) ; // 7char per display
+  return offset % 8 ; // only 8 displays available
 }
 
 

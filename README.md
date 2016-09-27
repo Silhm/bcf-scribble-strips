@@ -15,6 +15,7 @@ Wiki : https://github.com/Silhm/bcf-scribble-strips/wiki
 * [✓] Receive SysEx from Mackie HUI protocol and display accordingly
 * [✓] Switch the displayed parameter as it changes (i.e : touching PAN switches to PAN view)
 * [~] Add vu-meters on each channel : Metering handled, still need improvements
+* [future] Support OSC ? 
 
 
 ### Hardware

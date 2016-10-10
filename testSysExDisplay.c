@@ -14,6 +14,24 @@ int main()
     printf("offset |0x%x : %d |", sysEx[6], sysEx[6]);
     printf("Display |%d|", getDisplay(sysEx));
 
+    struct channel {
+        char* trackName;
+        char* displayLine1;
+        char* displayLine2;
+        char* assign;
+        char* faderLevel;
+        int leftPan;
+        int rightPan;
+    };
+
+    struct channel oledDisplay1;
+    oledDisplay1.trackName = "Kick";
+    oledDisplay1.assign = "Pn";
+
+
+
+
+    
     return(0);
 }
 

@@ -73,7 +73,27 @@ int getDisplay(byte *sysEx){
 }
 
 
+/************************************************************************/
+// Protocol Initialization
 
+//On received : <Hdr> 00 F7  : DAW requests Devices
+// > send the serial number and stuff
+//    <Hdr>                         Host Connection Query
+byte answer[] = { 
+    OxF0, 0x00, 0x00, 0x66, 0x05, 0x00, // <Hdr>
+    0x01,                               // Host Connection Query
+    'a', 'b', 'c', 'd', 'e', 'f', 'g',  // Serial Number (7 chars)
+    0x01, 0x02, 0x03, 0x04,             // Challenge Code (whatever)
+    0xF7                                // EndOfSysEx
+};
 
+//The Daw should reply: <Hdr> 02 + serial + challenge answer F0
+// Do not take challenge into account, just check reply 0x02 after <Hdr>
 
-
+// Send confirmation
+byte reply[] = {
+    0xF0, 0x00, 0x00, 0x66, 0x05, 0x00 // <Hdr>
+    0x03,                              // Connection Confirmation
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', // Serial Number
+    0xF7                               // EndOfSysEx
+};

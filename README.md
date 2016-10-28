@@ -9,13 +9,18 @@ Wiki : https://github.com/Silhm/bcf-scribble-strips/wiki
 
 * [TODO] Add more Scribble strips (at least 8, for the 8 channels of the BCF 2000)
 * [TODO] Display track name on each display
+* [TODO] Change fonts and display style
+* [TODO] Add vu-meters on each channel : Metering handled, still need improvements
+* [TODO] Add display for assignement and timecode/bars
 * [✓] Compatible with Arduino boards UNO and MEGA (No clone or ftdi version compatibility).
 * [✓] Device recognized as a MIDI device on USB connection
 * [✓] Display informations on OLED screens
 * [✓] Receive SysEx from Mackie HUI protocol and display accordingly
 * [✓] Switch the displayed parameter as it changes (i.e : touching PAN switches to PAN view)
-* [~] Add vu-meters on each channel : Metering handled, still need improvements
-* [future] Support OSC ? 
+* [~] Handle RBG backlight on each channel (à la Behringer X-Touch)
+* [~] Add Fonction keys
+* [~] Add Jog Wheel
+* [Future] Support OSC with ethernet shield? 
 
 
 ### Hardware

@@ -17,71 +17,11 @@
 #include <midi_Defs.h>
 #include <midi_Settings.h>
 
-
-
-//Oled related
-#define OLED_RESET 4
-#define LOGO16_GLCD_HEIGHT 16
-#define LOGO16_GLCD_WIDTH  16
-// character dimensions (for aligning text)
-#define CH_WID 6
-#define CH_HEI 8
-// display dimensions (for aligning text)
-#define DP_WID 128
-#define DP_HEI 32
-#define DP_WID_MID 64
-#define DP_HEI_MID 16
+#include "arduinoBCF.h"
+#include "HUIlib.c"
 
 Adafruit_SSD1306 display(OLED_RESET);
 
-MIDI_CREATE_DEFAULT_INSTANCE();
-#define   MIDI_NAMESPACE   midi
-
-static const unsigned char PROGMEM logo16_glcd_bmp[] =
-{ B00000000, B11000000,
-  B00000001, B11000000,
-  B00000001, B11000000,
-  B00000011, B11100000,
-  B11110011, B11100000,
-  B11111110, B11111000,
-  B01111110, B11111111,
-  B00110011, B10011111,
-  B00011111, B11111100,
-  B00001101, B01110000,
-  B00011011, B10100000,
-  B00111111, B11100000,
-  B00111111, B11110000,
-  B01111100, B11110000,
-  B01110000, B01110000,
-  B00000000, B00110000
-};
-
-#if (SSD1306_LCDHEIGHT != 32)
-#error("Height incorrect, please fix Adafruit_SSD1306.h!");
-#endif
-
-//MIDI buffer
-static byte *lastSysEx;
-
-static bool overload = false;
-
-
-// Define the channel structure
-struct channel {
-  byte* trackName;
-  byte displayLine1[7];
-  byte displayLine2[7];
-  byte offsetl1;
-  byte offsetl2;
-  byte* assign;
-  byte* faderLevel;
-  int leftPan;
-  int rightPan;
-};
-
-// define all displays
-static struct channel oledDisplays[7];
-static int currentDisp = 0;
 
 /**
    Board Setup
@@ -189,7 +129,7 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
    MIDI SysEx
 */
 void handleSysEx(byte * sysEx, unsigned buffSize) {  
-/*
+
   //Opening communication
   if (sysEx[5] == 0x00) {
     display.clearDisplay();
@@ -215,14 +155,14 @@ void handleSysEx(byte * sysEx, unsigned buffSize) {
     byte sysExConnectionConfirm[] = { 0xf0, 0x00, 0x00, 0x66, 0x14, 0x03, 0x36, 0x36, 0x36, 0x36, 0x36, 0x36, 0x36, 0xF7 };
     MIDI.sendSysEx(14, sysExConnectionConfirm, false);
   }
-*/
+/*
   //if(sysEx[0] == 0xF0){
     if (sysEx[5] == 0x12) {
       handleScribble(sysEx, buffSize);
     }
   
     refreshLCD();
-  //}
+  //}*/
 }
 
 

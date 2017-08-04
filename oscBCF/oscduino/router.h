@@ -11,12 +11,9 @@ char buff[120];
 void stripMeter(OSCMessage &msg, int addrOffset ){
     msg.getAddress(buff,0);
     char stripId = atoi (buff+addrOffset+1);
- 
-    Serial.print(stripId);
-    Serial.print(msg.getFloat(0));
-    
+     
     if(stripId == 1){
-      Gstrip.meter,msg.getFloat(0);
+      Gstrip.meter = msg.getFloat(0);
     }
     
 }

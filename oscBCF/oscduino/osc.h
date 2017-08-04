@@ -9,7 +9,8 @@ void OSCConfig() {
   OSCMessage feedbackMsg("/set_surface/feedback");
   OSCMessage striplistMsg("/strip/list");
   
-  feedbackMsg.add("4087");
+  feedbackMsg.add("3943");
+  //feedbackMsg.add("4087");
 
   Udp.beginPacket(dawURL, dawPort);
   feedbackMsg.send(Udp); // send the bytes to the SLIP stream

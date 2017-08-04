@@ -102,7 +102,14 @@ void displayStrip(int ssid, const char* mode){
     }
 
     //Meter TODO
+    // -200 to 0
+    //min 1930
+    // max > 0 is clipping
+    //Gstrip.meter
+    int height = -9 * Gstrip.meter ;
     display.fillRect(2, 10, 6, 22, WHITE);
+    //fill with void
+    display.fillRect(2, 10, 6, height, BLACK);
 
     
   

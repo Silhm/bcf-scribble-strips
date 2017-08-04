@@ -38,50 +38,74 @@ void displayPan(float panValue){
  * ssid to display
  */
 void displayStrip(int ssid, const char* mode){
+   int offsetX = 17;
+   
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(2, 0);
   display.print(Gstrip.ssid); 
 
   //Track Name
-  display.setCursor(20, 0);
+  display.setCursor(20, 1);
   display.setTextSize(2);
+  
+  if(Gstrip.selected){
+    display.fillRoundRect(offsetX, 0, 110, 17, 2, WHITE);
+    display.setTextColor(BLACK); 
+  }
   display.println(Gstrip.trackName);
+  display.setTextColor(WHITE); 
 
   if(mode == "strip"){
     display.setTextSize(1);
     //Solo
     if(Gstrip.solo){
       //x0, y0, w, h, rad, col
-      display.fillRoundRect(0, 10, 11, 10, 2, WHITE);
+      display.fillRoundRect(offsetX + 5, 20, 30, 12, 2, WHITE);
       display.setTextColor(BLACK);
-      display.setCursor(3, 10);
-      display.print("s");
+      display.setCursor(offsetX + 8, 22);
+      display.print("solo");
       display.setTextColor(WHITE);
     }
     else{
-      display.drawRoundRect(0, 10, 11, 10, 2, WHITE);
+      display.drawRoundRect(offsetX + 5, 20, 30, 12, 2, WHITE);
       display.setTextColor(WHITE);
-      display.setCursor(3, 10);
-      display.print("s");
+      display.setCursor(offsetX + 8, 22);
+      display.print("solo");
     }
-  
+
     //Mute
     if(Gstrip.mute){
       //x0, y0, w, h, rad, col
-      display.fillRoundRect(0, 22, 11, 10, 2, WHITE);
+      display.fillRoundRect(offsetX + 45, 20, 31, 12, 2, WHITE);
       display.setTextColor(BLACK);
-      display.setCursor(3, 22);
-      display.print("m");
+      display.setCursor(offsetX + 49, 22);
+      display.print("mute");
       display.setTextColor(WHITE);
     }
     else{
-      display.drawRoundRect(0, 22, 11, 10, 2, WHITE);
+      display.drawRoundRect(offsetX + 45, 20, 31, 12, 2, WHITE);
       display.setTextColor(WHITE);
-      display.setCursor(3, 22);
-      display.print("m");
-  }
+      display.setCursor(offsetX + 49, 22);
+      display.print("mute");
+   }
 
+    //Rec
+    if(Gstrip.recEnable){
+      //x0, y0, w, h, rad, col
+      display.fillRoundRect(offsetX + 85, 20, 23, 12, 2, WHITE);
+      display.fillCircle(offsetX + 96, 26, 4, BLACK);
+    }
+      else{
+      display.drawRoundRect(offsetX + 85, 20, 23, 12, 2, WHITE);
+      display.fillCircle(offsetX + 96, 26, 4, WHITE);
+    }
+
+    //Meter TODO
+    display.fillRect(2, 10, 6, 22, WHITE);
+
+    
+  
   }
   else if(mode == "pan"){
     displayPan(Gstrip.panPos);

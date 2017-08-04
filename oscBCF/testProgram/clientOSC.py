@@ -44,13 +44,19 @@ if __name__ == "__main__":
     client.send(stripMsg)
 
     stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/mute")
-    stripMsg.add_arg(8)
+    stripMsg.add_arg(3)
     stripMsg.add_arg(random_bool())
     stripMsg = stripMsg.build()
     client.send(stripMsg)
 
     stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/solo")
-    stripMsg.add_arg(8)
+    stripMsg.add_arg(1)
+    stripMsg.add_arg(random_bool())
+    stripMsg = stripMsg.build()
+    client.send(stripMsg)
+
+    stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/recenable")
+    stripMsg.add_arg(4)
     stripMsg.add_arg(random_bool())
     stripMsg = stripMsg.build()
     client.send(stripMsg)

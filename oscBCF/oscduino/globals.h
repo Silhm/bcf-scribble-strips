@@ -3,9 +3,9 @@
 // Define the channel structure
 struct strip {
   int ssid;
-  char trackName[16];
+  char trackName[9];
   float faderPos;
-  float instantSignal;
+  float meter;
   float panPos;
   bool recEnable;
   bool solo;

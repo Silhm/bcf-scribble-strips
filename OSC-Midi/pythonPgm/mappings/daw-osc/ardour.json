@@ -1,0 +1,35 @@
+{
+  "strip": {
+    "name": "/strip/name",
+    "level": "",
+    "fader": "/strip/fader",
+    "gain": "/strip/gain",
+    "mute": "/strip/mute",
+    "solo": "/strip/solo",
+    "rec": "/strip/recenable",
+    "polarity": "/strip/polarity",
+    "panStereoPosition": "pan_stereo_position",
+    "select": "/strip/select"
+  },
+  "master": {
+    "level": "",
+    "fader": "/master/fader",
+    "gain": "/master/gain",
+    "mute": "/master/mute"
+  },
+  "transport": {
+    "play": "/transport_play",
+    "stop": "/transport_stop",
+    "recArm": "/rec_enable_toggle",
+    "loop": "/loop_toggle",
+    "frame": "/transport_frame"
+  },
+  "editing": {
+    "undo": "/undo",
+    "redo": "/redo"
+  },
+  "bank": {
+    "up": "/bank_up",
+    "down": "/bank_down"
+  }
+}

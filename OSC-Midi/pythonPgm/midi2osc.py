@@ -16,13 +16,14 @@ from lib.midiHelper import *
 
 # Edit this to load right conf file
 DAW_NAME = "ardour"
-
+BANK_SIZE = 8 
 
 class MidiToOSC:
 
     def __init__(self, ipAddr, port ):
 
         # Init OSC client
+        print("OSC will be sent on "+ipAddr+":"+str(port)) 
         self._oscClient = udp_client.UDPClient(ipAddr, port)
 
         # Init Midi client and display available devices
@@ -33,6 +34,8 @@ class MidiToOSC:
         with open('mappings/daw-osc/'+DAW_NAME+'.json', 'r') as f:
             self._dawConfig = json.load(f)
 
+        self.buttonMode = "solomute"
+        self.bank = 0
 
 
     def sendOSCMessage(self, address, values):
@@ -62,7 +65,6 @@ class MidiToOSC:
         buttonNotes = ["E", "F", "F#", "G", "G#", "A", "A#", "B"]
         buttonNotesl2 = ["C", "C#", "D", "D#", "E", "F", "F#", "G"]
 
-        buttonMode = "solomute"
 
 
         # NOTE ON
@@ -76,7 +78,7 @@ class MidiToOSC:
             # Octave 7 is the fader touched
             if(octave == 7 and note in faderNotes):
                 faderId = faderNotes.index(note)
-                print("Fader "+ str(faderId+1)+" touched!")
+                print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
 
             # Buttons first and second line
             if(octave == 0 and note in buttonNotes):
@@ -87,10 +89,14 @@ class MidiToOSC:
                 buttonId = buttonNotesl2.index(note) 
                 # octave 1 -> line 2
                 self._handleButtons(2,buttonId,noteOn)
-
-
-
-
+            
+            # Encoder groups
+            # Top right
+            if(octave == 4 and note == "A#"):
+                self._handleEncoderGrpButtons("TopRight", noteOn)
+            # Bottom right
+            if(octave == 3 and note == "D#"):
+                self._handleEncoderGrpButtons("BottomRight", noteOn)
 
             # Knob click
             """ Not yet
@@ -131,16 +137,6 @@ class MidiToOSC:
         if midiMessage.type == "pitchwheel" :
             self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
             
-            """ 
-            oscZone = "strip"
-            oscType = "fader"
-        
-            address = self._dawConfig[oscZone][oscType]
-            values = ["aaaa"]
-
-            self.sendOSCMessage(address, values)
-            """
-
 
     def read(self):
         """ Read Midi message """
@@ -152,20 +148,63 @@ class MidiToOSC:
 
 
     def _handleButtons(self, line, bId, noteOn):
+        """
+        Handle the two lines of buttons : Solo / mute or Select / Rec
+        """
         print("Button line "+ str(line) +" : "+ str(bId+1)+" clicked "+str(noteOn))
+        if line == 1:
+            address = self._dawConfig["strip"]["solo" if self.buttonMode == "solomute" else "select"]
+        elif line == 2:
+            address = self._dawConfig["strip"]["mute" if self.buttonMode == "solomute" else "rec"]
+
+        buttonId = (bId +1)+ self.bank*BANK_SIZE
+        values = [buttonId, noteOn]
+        self.sendOSCMessage(address, values)
+
+
+    def _handleEncoderGrpButtons(self, name, clicked):
+        """
+        Handle the Encoder groups button (only top and bottom right)
+        """
+        if clicked and name == "TopRight" :
+            self.buttonMode = "solomute"
+        elif clicked and name == "BottomRight":
+            self.buttonMode = "selectrec"
+
+        print("button mode: "+self.buttonMode)
+
 
     def _handleFunctionButtons(self, name, clicked):
+        """
+        Handle the function Buttons F1 -> F8    
+        """
         print("F Button " + str(name) +" "+str(clicked))
 
+
     def _handleBankButtons(self, name, clicked):
+        """
+        Handle bank buttons
+        """
         print("Bank" + str(name) +" "+str(clicked))
+        if clicked and name == ">":
+            self.bank = self.bank + 1
+        elif clicked and name == "<" and self.bank >0:
+            self.bank = self.bank - 1
+        print("       >> BANK "+str(self.bank))
 
 
     def _handlePitchWheel(self, ch, value):
-        faderId = ch
+        """
+        Handle fader moves
+        """
+        faderId = (ch + 1) + self.bank*BANK_SIZE
         faderValue = value
-        print("Fader "+str(ch+1)+" position "+str(value))
+        print("Fader "+str(ch)+" position "+str(value))
+        
+        address = self._dawConfig["strip"]["fader"]
+        values = [faderId, faderValue]
 
+        self.sendOSCMessage(address, values)
 
 
 

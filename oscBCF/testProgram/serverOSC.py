@@ -22,6 +22,10 @@ if __name__ == "__main__":
 
   dispatcher = dispatcher.Dispatcher()
   dispatcher.map("/debug", print)
+  dispatcher.map("/strip/fader", print)
+  dispatcher.map("/strip/solo", print)
+  dispatcher.map("/strip/mute", print)
+  dispatcher.map("/strip/rec_enable", print)
   dispatcher.map("/volume", print_volume_handler, "Volume")
   dispatcher.map("/logvolume", print_compute_handler, "Log volume", math.log)
 

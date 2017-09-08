@@ -30,7 +30,7 @@ class MidiToOSC:
         self.midiIN = mido.open_input(midiPort)
 
         # Get the DAW OSC configuration
-        with open('config/daw-osc/'+DAW_NAME+'.json', 'r') as f:
+        with open('mappings/daw-osc/'+DAW_NAME+'.json', 'r') as f:
             self._dawConfig = json.load(f)
 
 
@@ -77,16 +77,13 @@ class MidiToOSC:
                 faderId = faderNotes.index(note)
                 print("Fader "+ str(faderId+1)+" touched!")
 
-            # Buttons first line
-            if(octave == 0 and note in buttonNotes):
-                buttonId = buttonNotes.index(note)
-                self._handleButtons(1,buttonId,noteOn)
+            # Buttons first and second line
+            if(note in buttonNotes):
+                buttonId = buttonNotes.index(note) 
+                # octave 0 -> line 1
+                # octave 1 -> line 2
+                self._handleButtons((octave+1),buttonId,noteOn)
 
-            # Buttons second line
-            if(octave == 1 and note in buttonNotes):
-                buttonId = buttonNotes.index(note)
-                self._handleButtons(2,buttonId,noteOn)
- 
             # Knob click
             """ Not yet
             if(octave == 1 and note in knobNotes):
@@ -97,36 +94,34 @@ class MidiToOSC:
             # Other Buttons
             if(octave == 2):
                 if(note == "G"):
-                    print("Learn button clicked "+str(noteOn))
+                    self._handleFunctionButtons("Learn", noteOn)
                 if(note == "G#"):
-                    print("Store button clicked "+str(noteOn))
+                    self._handleFunctionButtons("Store", noteOn)
                 if(note == "F"):
-                    print("Exit button clicked "+str(noteOn))
+                    self._handleFunctionButtons("Exit", noteOn)
                 if(note == "F#"):
-                    print("Edit button clicked "+str(noteOn))
+                    self._handleFunctionButtons("Edit", noteOn)
 
                 # Preset / Bank 
                 if(note == "A#"):
-                    print("Preset < clicked "+ str(noteOn))
+                    self._handleBankButtons("<", noteOn)
                 if(note == "B"):
-                    print("Preset > clicked "+ str(noteOn))
+                    self._handleBankButtons(">", noteOn)
     
             # Four buttons in bottom of the BCF 
             if octave == 6 :
                 if(note == "G"):
-                    print("-Top Left- button clicked "+ str(noteOn))
+                    self._handleFunctionButtons("TopLeft", noteOn)
                 if(note == "A"):
-                    print("-Top Right- button clicked "+ str(noteOn))
+                    self._handleFunctionButtons("TopRight", noteOn)
                 if(note == "G#"):
-                    print("-Bottom Left- button clicked "+str(noteOn))
+                    self._handleFunctionButtons("BottomLeft", noteOn)
                 if(note == "A#"):
-                    print("-Bottom Right button clicked "+str(noteOn))
-        
+                    self._handleFunctionButtons("BottomRight", noteOn)
 
         #pitchwheel
         if midiMessage.type == "pitchwheel" :
-            faderId = midiMessage.channel
-            faderValue = midiMessage.value
+            self._handlePitchWheel(midiMessage.channel, midiMessage.value)
             
             """ 
             oscZone = "strip"
@@ -149,6 +144,21 @@ class MidiToOSC:
 
     def _handleButtons(self, line, bId, noteOn):
         print("Button line "+ str(line) +" : "+ str(bId+1)+" clicked "+str(noteOn))
+
+    def _handleFunctionButtons(self, name, clicked):
+        print("F Button " + str(name) +" "+str(clicked))
+
+    def _handleBankButtons(self, name, clicked):
+        print("Bank" + str(name) +" "+str(clicked))
+
+
+    def _handlePitchWheel(self, ch, value):
+        faderId = ch
+        faderValue = value
+        print("Fader "+str(ch+1)+" position "+str(value))
+
+
+
 
 
 if __name__ == "__main__":

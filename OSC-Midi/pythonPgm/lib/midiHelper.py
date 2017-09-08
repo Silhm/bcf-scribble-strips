@@ -10,6 +10,6 @@ def midiNumberToNote(number):
     index = number % 12
     note = _notes[index]
     octave = int((number-12)/12)
-    print("MIDI Note number "+str(number)+" : "+str(note)+str(octave))
+    #print("MIDI Note number "+str(number)+" : "+str(note)+str(octave))
     return (note,octave)
 

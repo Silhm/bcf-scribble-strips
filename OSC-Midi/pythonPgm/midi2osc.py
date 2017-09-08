@@ -55,11 +55,12 @@ class MidiToOSC:
         """
         Route midi message to the correct OSC address
         """
-        print(" > route message: "+midiMessage.type)
+        #print(" > route message: "+midiMessage.type)
         
         faderNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
         knobNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
         buttonNotes = ["E", "F", "F#", "G", "G#", "A", "A#", "B"]
+        buttonNotesl2 = ["C", "C#", "D", "D#", "E", "F", "F#", "G"]
 
         buttonMode = "solomute"
 
@@ -70,7 +71,7 @@ class MidiToOSC:
             note = midiNote[0]
             octave = midiNote[1]
 
-            noteOn = midiMessage.type == "note_on"
+            noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
 
             # Octave 7 is the fader touched
             if(octave == 7 and note in faderNotes):
@@ -78,11 +79,18 @@ class MidiToOSC:
                 print("Fader "+ str(faderId+1)+" touched!")
 
             # Buttons first and second line
-            if(note in buttonNotes):
+            if(octave == 0 and note in buttonNotes):
                 buttonId = buttonNotes.index(note) 
                 # octave 0 -> line 1
+                self._handleButtons(1,buttonId,noteOn)
+            if(octave == 1 and note in buttonNotesl2):
+                buttonId = buttonNotesl2.index(note) 
                 # octave 1 -> line 2
-                self._handleButtons((octave+1),buttonId,noteOn)
+                self._handleButtons(2,buttonId,noteOn)
+
+
+
+
 
             # Knob click
             """ Not yet
@@ -112,16 +120,16 @@ class MidiToOSC:
             if octave == 6 :
                 if(note == "G"):
                     self._handleFunctionButtons("TopLeft", noteOn)
-                if(note == "A"):
-                    self._handleFunctionButtons("TopRight", noteOn)
                 if(note == "G#"):
+                    self._handleFunctionButtons("TopRight", noteOn)
+                if(note == "A"):
                     self._handleFunctionButtons("BottomLeft", noteOn)
                 if(note == "A#"):
                     self._handleFunctionButtons("BottomRight", noteOn)
 
         #pitchwheel
         if midiMessage.type == "pitchwheel" :
-            self._handlePitchWheel(midiMessage.channel, midiMessage.value)
+            self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
             
             """ 
             oscZone = "strip"
@@ -136,10 +144,11 @@ class MidiToOSC:
 
     def read(self):
         """ Read Midi message """
-        print("read midi input...")
 
         msg = self.midiIN.receive()
         self.routeMessage(msg)
+
+        self.read()
 
 
     def _handleButtons(self, line, bId, noteOn):
@@ -173,6 +182,7 @@ if __name__ == "__main__":
     midiOSC = MidiToOSC(args.ip, args.port)
 
     # Read Midi
+    print("read midi input...")
     midiOSC.read()
 
 

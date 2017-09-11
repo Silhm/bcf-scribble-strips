@@ -9,6 +9,7 @@ Final step is to route OSC message to Oled displays and Vu-meters
 
 
 Mappings Directory contains Mappings of :
+
     - OSC message for each supported DAW
     - Midi message used by each supported Controllers
 

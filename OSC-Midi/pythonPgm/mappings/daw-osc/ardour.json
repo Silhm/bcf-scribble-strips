@@ -2,14 +2,25 @@
   "strip": {
     "name": "/strip/name",
     "level": "",
-    "fader": "/strip/fader",
+    "fader": {
+      "address":  "/strip/fader",
+      "valueRange":  [0,1]
+    },
     "gain": "/strip/gain",
-    "mute": "/strip/mute",
-    "solo": "/strip/solo",
-    "rec": "/strip/recenable",
+    "mute": {
+        "address": "/strip/mute"
+    },
+    "solo": {
+        "address": "/strip/solo"
+    },
+    "rec": {
+        "address":"/strip/recenable"
+    },
     "polarity": "/strip/polarity",
     "panStereoPosition": "pan_stereo_position",
-    "select": "/strip/select"
+    "select": {
+        "address":"/strip/select"
+    }
   },
   "master": {
     "level": "",

@@ -16,6 +16,7 @@ from lib.midiHelper import *
 
 # Edit this to load right conf file
 DAW_NAME = "ardour"
+CONTROLLER_NAME = "bcf2000"
 BANK_SIZE = 8 
 
 class MidiToOSC:
@@ -33,6 +34,10 @@ class MidiToOSC:
         # Get the DAW OSC configuration
         with open('mappings/daw-osc/'+DAW_NAME+'.json', 'r') as f:
             self._dawConfig = json.load(f)
+
+        # Get the Controller MIDI configuration
+        with open('mappings/controllers/'+CONTROLLER_NAME+'.json', 'r') as f2:
+            self._ctrlConfig = json.load(f2)
 
         self.buttonMode = "solomute"
         self.bank = 0
@@ -60,12 +65,10 @@ class MidiToOSC:
         """
         #print(" > route message: "+midiMessage.type)
         
-        faderNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
-        knobNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
-        buttonNotes = ["E", "F", "F#", "G", "G#", "A", "A#", "B"]
-        buttonNotesl2 = ["C", "C#", "D", "D#", "E", "F", "F#", "G"]
-
-
+        faderNotes = self._ctrlConfig.fader.touch.notes 
+        vPotNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
+        buttonNotes = self._ctrlConfig.buttons.line1.notes 
+        buttonNotesl2 = self._ctrlConfig.buttons.line2.notes 
 
         # NOTE ON
         if midiMessage.type == "note_on" or  midiMessage.type == "note_off":
@@ -98,7 +101,7 @@ class MidiToOSC:
             if(octave == 3 and note == "D#"):
                 self._handleEncoderGrpButtons("BottomRight", noteOn)
 
-            # Knob click
+            # vPot click
             """ Not yet
             if(octave == 1 and note in knobNotes):
                 knobId = knobNotes.index(note)
@@ -201,7 +204,7 @@ class MidiToOSC:
         faderValue = value
         print("Fader "+str(ch)+" position "+str(value))
         
-        address = self._dawConfig["strip"]["fader"]
+        address = self._dawConfig["strip"]["fader"]["address"]
         values = [faderId, faderValue]
 
         self.sendOSCMessage(address, values)

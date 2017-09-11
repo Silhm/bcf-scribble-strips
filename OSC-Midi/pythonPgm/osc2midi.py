@@ -11,6 +11,9 @@ import sqlite3
 import mido
 from pythonosc import dispatcher
 from pythonosc import osc_server
+
+from lib.midiHelper import *
+
 from sqlalchemy import *
 
 
@@ -27,8 +30,8 @@ class OscToMidi:
 
 
         # Init Midi client and display available devices
-        midiPort = mido.get_input_names()[0]
-        self.midiIN = mido.open_input(midiPort)
+        midiPort = mido.get_output_names()[0]
+        self.midiOUT = mido.open_output(midiPort)
 
         # Get the DAW OSC configuration
         with open('mappings/daw-osc/'+DAW_NAME+'.json', 'r') as f:
@@ -69,8 +72,12 @@ class OscToMidi:
         # get all necessary osc Address to change controller state
         #faders
         self.dispatcher.map(dc["strip"]["fader"]["address"], self._dispatchFader)
+        
+        #buttons line1
+        self.dispatcher.map(dc["strip"]["solo"]["address"], self._dispatchButtons)
+        
+        self.dispatcher.map(dc["strip"]["mute"]["address"], self._dispatchButtons)
         """
-        self.dispatcher.map(dc["strip"]["fader"]["address"], self._dispatchFader)
 
         #buttons line1
         self.dispatcher.map(dc["strip"]["solo"]["address"], self._dispatchButtons)
@@ -95,25 +102,30 @@ class OscToMidi:
         # convert fader OSC value to MIDI value
         faderMidiRange = self._ctrlConfig["fader"]["move"]["valueRange"]
         faderOSCRange = self._dawConfig["strip"]["fader"]["valueRange"]
-
         faderMove = self._ctrlConfig["fader"]["move"]["type"]
-       
         readyVal = self.convertValueToMidiRange(faderValue, faderOSCRange, faderMidiRange)
-        
         midiMessage = "{} ch: {} value:{}".format(faderMove, stripId, readyVal)
-            
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,faderValue, midiMessage))
+        
+        msg = mido.Message('pitchwheel', pitch=readyVal, channel=stripId)
+        self.midiOUT.send(msg)
         # TODO: handle bank
 
 
-    def _dispatchButtons(self, args):
-        print("dispatch button message")
+    def _dispatchButtons(self, address, stripId, buttonValue):
+        # convert fader OSC value to MIDI value
+        print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, "midiMessage"))
         #Get surface mode and display accordingly
-        print(args)
+        
+        line = "line1" if "solo" in address or "select" in address else "line2"
 
+        buttonsMidiNotes = self._ctrlConfig["buttons"][line]["notes"]
+        
+        midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],0)
+        #TODO handle 2 lines
+        msg = mido.Message('note_on', note=midiNote, velocity=127 if buttonValue else 0)
+        self.midiOUT.send(msg)
 
-    def sendMidi(self, message):
-        pass
 
 
     def convertValueToMidiRange(self, oscValue, oscRange, midiRange):

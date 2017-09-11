@@ -32,6 +32,46 @@ if __name__ == "__main__":
 
   client = udp_client.UDPClient(args.ip, args.port)
 
+
+  strip = 0
+  buttonOn = 1
+  for i in range(100):
+    
+    stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/fader")
+    stripMsg.add_arg(strip)
+    stripMsg.add_arg(0.01*i)
+    stripMsg = stripMsg.build()
+    client.send(stripMsg)
+
+
+    stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/solo")
+    stripMsg.add_arg(strip)
+    stripMsg.add_arg(buttonOn)
+    stripMsg = stripMsg.build()
+    client.send(stripMsg)
+
+    stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/mute")
+    stripMsg.add_arg(strip)
+    stripMsg.add_arg(not buttonOn)
+    stripMsg = stripMsg.build()
+    client.send(stripMsg)
+
+    buttonOn = 0 if i>62 else 1 
+
+
+
+
+    strip=strip+1
+    if strip > 7:
+        strip = 0
+
+
+    time.sleep(0.1)
+
+
+
+
+  """
   for x in range(10): 
     val = int(random.random() * 10)
     #print("sending "+ str(val%2) )
@@ -76,17 +116,8 @@ if __name__ == "__main__":
     client.send(stripMsg)
 
 
-
-
-
-
-
-
-
-
-
     time.sleep(0.3)
-
-    
+    """
+   
 
 

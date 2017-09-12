@@ -42,6 +42,10 @@ class OscToMidi:
             self._ctrlConfig = json.load(f2)
 
 
+        self.buttonMode = "solomute"
+        self.bank = 0
+
+
         """
         TODO
             wait for OSC
@@ -74,23 +78,16 @@ class OscToMidi:
         self.dispatcher.map(dc["strip"]["fader"]["address"], self._dispatchFader)
         
         #buttons line1
-        self.dispatcher.map(dc["strip"]["solo"]["address"], self._dispatchButtons)
+        self.dispatcher.map(dc["strip"]["solo"]["address"], self._dispatchButtonsLine1)
+        self.dispatcher.map(dc["strip"]["select"]["address"] , self._dispatchButtonsLine1)
         
-        self.dispatcher.map(dc["strip"]["mute"]["address"], self._dispatchButtons)
-        """
-
-        #buttons line1
-        self.dispatcher.map(dc["strip"]["solo"]["address"], self._dispatchButtons)
-        self.dispatcher.map(dc["strip"]["select"]["address"] , self._dispatchButtons)
-
         #buttons line2
-        self.dispatcher.map(dc["strip"]["mute"]["address"], self._dispatchButtons)
-        self.dispatcher.map(dc["strip"]["rec"]["address"], self._dispatchButtons)
+        self.dispatcher.map(dc["strip"]["mute"]["address"], self._dispatchButtonsLine2)
+        self.dispatcher.map(dc["strip"]["rec"]["address"], self._dispatchButtonsLine2)
 
         #function buttons
-        #TODO
-        """
-        
+        for fButton in dc["function"]:
+            self.dispatcher.map(dc["function"][fButton], self._dispatchFunctionButtons, fButton )
         
         
         self.dispatcher.map("/debug", print)
@@ -99,7 +96,9 @@ class OscToMidi:
 
 
     def _dispatchFader(self, address, stripId, faderValue):
-        # convert fader OSC value to MIDI value
+        """
+        Convert fader OSC value to MIDI value
+        """
         faderMidiRange = self._ctrlConfig["fader"]["move"]["valueRange"]
         faderOSCRange = self._dawConfig["strip"]["fader"]["valueRange"]
         faderMove = self._ctrlConfig["fader"]["move"]["type"]
@@ -112,19 +111,76 @@ class OscToMidi:
         # TODO: handle bank
 
 
-    def _dispatchButtons(self, address, stripId, buttonValue):
-        # convert fader OSC value to MIDI value
-        print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, "midiMessage"))
+    def _dispatchButtonsLine1(self, address, stripId, buttonValue):
+        """
+        Convert Solo / Rec OSC value to MIDI value
+        """
+        #Get surface mode and display accordingly
+
+        #Do nothing if not good mode
+        if self.buttonMode == "solomute" and "rec" in address:
+            return
+
+        
+        buttonsMidiNotes  = self._ctrlConfig["buttons"]["line1"]["notes"]
+        buttonsMidiType = self._ctrlConfig["buttons"]["line1"]["type"]
+        buttonsMidiOctave = self._ctrlConfig["buttons"]["line1"]["octave"]
+        buttonsMidiValueOn = self._ctrlConfig["buttons"]["line1"]["valueOn"]
+        buttonsMidiValueOff = self._ctrlConfig["buttons"]["line1"]["valueOff"]
+        
+        midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],buttonsMidiOctave)
+        midiVelocity = buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
+
+        msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
+        self.midiOUT.send(msg)
+
+        print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))
+
+
+
+
+    def _dispatchButtonsLine2(self, address, stripId, buttonValue):
+        """
+        Convert Mute / Select OSC value to MIDI value
+        """
         #Get surface mode and display accordingly
         
-        line = "line1" if "solo" in address or "select" in address else "line2"
+        if self.buttonMode == "solomute" and "select" in address:
+            return
 
-        buttonsMidiNotes = self._ctrlConfig["buttons"][line]["notes"]
+        buttonsMidiNotes  = self._ctrlConfig["buttons"]["line2"]["notes"]
+        buttonsMidiType = self._ctrlConfig["buttons"]["line2"]["type"]
+        buttonsMidiOctave = self._ctrlConfig["buttons"]["line2"]["octave"]
+        buttonsMidiValueOn = self._ctrlConfig["buttons"]["line2"]["valueOn"]
+        buttonsMidiValueOff = self._ctrlConfig["buttons"]["line2"]["valueOff"]
         
-        midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],0)
-        #TODO handle 2 lines
-        msg = mido.Message('note_on', note=midiNote, velocity=127 if buttonValue else 0)
+        midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],buttonsMidiOctave)
+        midiVelocity = buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
+
+        msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
         self.midiOUT.send(msg)
+        
+        print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))
+    
+
+
+    def _dispatchFunctionButtons(self, address, bname):
+        """
+        Convert Mute / Select OSC value to MIDI value
+        """
+        bname = bname[0]
+        #midiFullNoteToNumber()
+        
+        fNote  = midiFullNoteToNumber(self._ctrlConfig["fbuttons"][bname]["note"])
+        fVelocity = self._ctrlConfig["fbuttons"][bname]["valueOn"]
+        fChannel = self._ctrlConfig["fbuttons"][bname]["ch"]
+        fType = self._ctrlConfig["fbuttons"][bname]["type"]
+
+        msg = mido.Message(fType, note=fNote, velocity=fVelocity, channel=fChannel)
+        self.midiOUT.send(msg)
+
+        print("Dispatching OSC: {} (mapped to {}) to MIDI: {}  ".format(address,bname, msg))
+
 
 
 

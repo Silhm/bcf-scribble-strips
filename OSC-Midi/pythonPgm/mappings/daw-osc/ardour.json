@@ -42,5 +42,15 @@
   "bank": {
     "up": "/bank_up",
     "down": "/bank_down"
+  },
+  "function": {
+      "F1" : "/Common/toggle-meterbridge",
+      "F2" : "/Window/show-mixer",
+      "F3" : "/Window/toggle-big-clock",
+      "F4" : "/Mixer/show-editor",
+      "F5" : "/Editor/goto-visual-state-1",
+      "F6" : "/Editor/goto-visual-state-2",
+      "F7" : "/Editor/goto-visual-state-3",
+      "F8" : "/Editor/goto-visual-state-4"
   }
 }

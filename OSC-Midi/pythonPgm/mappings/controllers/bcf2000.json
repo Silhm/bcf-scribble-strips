@@ -2,9 +2,10 @@
     "fader" : {
         "touch" : {
             "ch" : 1,
-            "type" : "note",
-            "octave" : 7,
-            "notes" : ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
+            "type" : "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "notes" : ["G#7", "A7", "A#7", "B7", "C7", "C#7", "D7", "D#7"]
         },
         "move" : {
             "type" : "pitchwheel",
@@ -15,14 +16,18 @@
     "buttons" : {
         "line1" : {
             "ch" : 1,
-            "type" : "note",
+            "type" : "note_on",
             "octave" : 0,
+            "valueOn": 127,
+            "valueOff": 0,
             "notes" : ["E", "F", "F#", "G", "G#", "A", "A#", "B"]
         },
         "line2" : {
             "ch" : 1,
-            "type" : "note",
+            "type" : "note_on",
             "octave" : 1,
+            "valueOn": 127,
+            "valueOff": 0,
             "notes" : ["C", "C#", "D", "D#", "E", "F", "F#", "G"]
         }
     },
@@ -37,19 +42,61 @@
         }
     },
     "fbuttons" : {
-        "group1" : {
-            "ch" : 1,
-            "type" : "note",
-            "octave" : 2,
-            "notes" : ["G", "G#", "F", "F#"],
-            "names" : ["F1", "F2", "F3", "F4"]
+        "F1":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "G2",
+            "ch":1
         },
-        "group2" : {
-            "ch" : 1,
-            "type" : "note",
-            "octave" : 6,
-            "notes" : ["G", "A", "G#", "A#"],
-            "names" : ["F5", "F6", "F7", "F8"]
+        "F2":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "G#2",
+            "ch":1
+        },
+        "F3":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "F2",
+            "ch":1
+        },
+        "F4":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "F#2",
+            "ch":1
+        },
+        "F5":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "G6",
+            "ch":1
+        },
+        "F6":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "A6",
+            "ch":1
+        },
+        "F7":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "G#6",
+            "ch":1
+        },
+        "F8":{
+            "type": "note_on",
+            "valueOn": 127,
+            "valueOff": 0,
+            "note": "A#6",
+            "ch":1
         }
     }
 }

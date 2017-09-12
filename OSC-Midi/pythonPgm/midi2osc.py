@@ -13,6 +13,8 @@ from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
 from lib.midiHelper import *
+from mappings.mapping import ControllerConfig, DawConfig
+
 
 # Edit this to load right conf file
 DAW_NAME = "ardour"
@@ -32,12 +34,10 @@ class MidiToOSC:
         self.midiIN = mido.open_input(midiPort)
 
         # Get the DAW OSC configuration
-        with open('mappings/daw-osc/'+DAW_NAME+'.json', 'r') as f:
-            self._dawConfig = json.load(f)
+        self.dawConfig = DawConfig(DAW_NAME)
 
         # Get the Controller MIDI configuration
-        with open('mappings/controllers/'+CONTROLLER_NAME+'.json', 'r') as f2:
-            self._ctrlConfig = json.load(f2)
+        self.ctrlConfig = ControllerConfig(CONTROLLER_NAME)
 
         self.buttonMode = "solomute"
         self.bank = 0
@@ -63,12 +63,15 @@ class MidiToOSC:
         """
         Route midi message to the correct OSC address
         """
-        #print(" > route message: "+midiMessage.type)
+        print(" > route message: {}".format(midiMessage))
         
-        faderNotes = self._ctrlConfig.fader.touch.notes 
-        vPotNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
-        buttonNotes = self._ctrlConfig.buttons.line1.notes 
-        buttonNotesl2 = self._ctrlConfig.buttons.line2.notes 
+        faderNotes = map(midiFullNoteToNumber, self.ctrlConfig.getFaderNotes())
+        #vPotNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
+        buttonNotes = self.ctrlConfig.getButtonNotes("line1")
+        buttonNotesl2 = self.ctrlConfig.getButtonNotes("line2")
+ 
+        
+
 
         # NOTE ON
         if midiMessage.type == "note_on" or  midiMessage.type == "note_off":
@@ -182,6 +185,10 @@ class MidiToOSC:
         Handle the function Buttons F1 -> F8    
         """
         print("F Button " + str(name) +" "+str(clicked))
+        address = self._dawConfig["function"][name]
+        self.sendOSCMessage(address, [])
+
+
 
 
     def _handleBankButtons(self, name, clicked):

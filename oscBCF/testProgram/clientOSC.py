@@ -22,6 +22,10 @@ def random_float():
 def random_int():
     return int(random.random() * 10)
 
+def random_function():
+    items = ["/Common/toggle-meterbridge","/Window/show-mixer","/Window/toggle-big-clock","/Mixer/show-editor","/Editor/goto-visual-state-1","/Editor/goto-visual-state-2","/Editor/goto-visual-state-3","/Editor/goto-visual-state-4"]
+    return random.choice(items)
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--ip", default="127.0.0.1",
@@ -55,6 +59,12 @@ if __name__ == "__main__":
     stripMsg.add_arg(not buttonOn)
     stripMsg = stripMsg.build()
     client.send(stripMsg)
+
+    # Testing functions
+    stripMsg = osc_message_builder.OscMessageBuilder(address = random_function())
+    stripMsg = stripMsg.build()
+    client.send(stripMsg)
+
 
     buttonOn = 0 if i>62 else 1 
 

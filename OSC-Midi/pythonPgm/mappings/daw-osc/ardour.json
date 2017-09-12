@@ -8,13 +8,19 @@
     },
     "gain": "/strip/gain",
     "mute": {
-        "address": "/strip/mute"
+        "address": "/strip/mute",
+	"valueOn": 1,
+	"valueOff": 0
     },
     "solo": {
-        "address": "/strip/solo"
+        "address": "/strip/solo",
+	"valueOn": 1,
+	"valueOff": 0
     },
     "rec": {
-        "address":"/strip/recenable"
+        "address":"/strip/recenable",
+	"valueOn": 1,
+	"valueOff": 0
     },
     "polarity": "/strip/polarity",
     "panStereoPosition": "pan_stereo_position",

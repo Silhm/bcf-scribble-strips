@@ -54,7 +54,7 @@ class MidiToOSC:
         for arg in values:
             msg.add_arg(arg)
 
-        print(" > > OSC: "+ address + " " + str(values))
+        print(" > > OSC: {} {}".format(address,values))
         self._oscClient.send(msg.build())
 
 
@@ -70,8 +70,6 @@ class MidiToOSC:
         buttonNotes = self.ctrlConfig.getButtonNotes("line1")
         buttonNotesl2 = self.ctrlConfig.getButtonNotes("line2")
  
-        
-
 
         # NOTE ON
         if midiMessage.type == "note_on" or  midiMessage.type == "note_off":
@@ -111,16 +109,19 @@ class MidiToOSC:
                 print("Knob : "+ str(buttonId+1)+" clicked "+str(noteOn))
             """
 
+            
+            
+
             # Other Buttons
             if(octave == 2):
-                if(note == "G"):
-                    self._handleFunctionButtons("Learn", noteOn)
                 if(note == "G#"):
-                    self._handleFunctionButtons("Store", noteOn)
-                if(note == "F"):
-                    self._handleFunctionButtons("Exit", noteOn)
+                    self._handleFunctionButtons("F1", noteOn)
+                if(note == "G"):
+                    self._handleFunctionButtons("F2", noteOn)
                 if(note == "F#"):
-                    self._handleFunctionButtons("Edit", noteOn)
+                    self._handleFunctionButtons("F3", noteOn)
+                if(note == "F"):
+                    self._handleFunctionButtons("F4", noteOn)
 
                 # Preset / Bank 
                 if(note == "A#"):
@@ -131,13 +132,13 @@ class MidiToOSC:
             # Four buttons in bottom of the BCF 
             if octave == 6 :
                 if(note == "G"):
-                    self._handleFunctionButtons("TopLeft", noteOn)
+                    self._handleFunctionButtons("F5", noteOn)
                 if(note == "G#"):
-                    self._handleFunctionButtons("TopRight", noteOn)
+                    self._handleFunctionButtons("F6", noteOn)
                 if(note == "A"):
-                    self._handleFunctionButtons("BottomLeft", noteOn)
+                    self._handleFunctionButtons("F7", noteOn)
                 if(note == "A#"):
-                    self._handleFunctionButtons("BottomRight", noteOn)
+                    self._handleFunctionButtons("F8", noteOn)
 
         #pitchwheel
         if midiMessage.type == "pitchwheel" :
@@ -157,14 +158,11 @@ class MidiToOSC:
         """
         Handle the two lines of buttons : Solo / mute or Select / Rec
         """
-        print("Button line "+ str(line) +" : "+ str(bId+1)+" clicked "+str(noteOn))
-        if line == 1:
-            address = self._dawConfig["strip"]["solo" if self.buttonMode == "solomute" else "select"]
-        elif line == 2:
-            address = self._dawConfig["strip"]["mute" if self.buttonMode == "solomute" else "rec"]
+        address = self.dawConfig.getButtonAddress(line, self.buttonMode)
+        value = self.dawConfig.getButtonValue(line, self.buttonMode,noteOn)
 
         buttonId = (bId +1)+ self.bank*BANK_SIZE
-        values = [buttonId, noteOn]
+        values = [buttonId, value]
         self.sendOSCMessage(address, values)
 
 
@@ -185,7 +183,7 @@ class MidiToOSC:
         Handle the function Buttons F1 -> F8    
         """
         print("F Button " + str(name) +" "+str(clicked))
-        address = self._dawConfig["function"][name]
+        address = self.dawConfig.getFunctionAddress(name)
         self.sendOSCMessage(address, [])
 
 
@@ -208,10 +206,11 @@ class MidiToOSC:
         Handle fader moves
         """
         faderId = (ch + 1) + self.bank*BANK_SIZE
-        faderValue = value
-        print("Fader "+str(ch)+" position "+str(value))
         
-        address = self._dawConfig["strip"]["fader"]["address"]
+        #TODo convert value to OSC readable
+        faderValue = value
+
+        address = self.dawConfig.getFaderAddress()
         values = [faderId, faderValue]
 
         self.sendOSCMessage(address, values)

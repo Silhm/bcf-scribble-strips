@@ -111,7 +111,7 @@
         }
     },
     "bank" : {
-        "down":{
+        "up":{
             "type": "note_on",
             "valueOn": 127,
             "valueOff": 0,
@@ -119,7 +119,7 @@
             "clickAction": "click_once",
             "ch":1
         },
-        "up":{
+        "down":{
             "type": "note_on",
             "valueOn": 127,
             "valueOff": 0,

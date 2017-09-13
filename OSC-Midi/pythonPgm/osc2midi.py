@@ -13,6 +13,7 @@ from pythonosc import dispatcher
 from pythonosc import osc_server
 
 from lib.midiHelper import *
+from mappings.mapping import ControllerConfig, DawConfig
 
 from sqlalchemy import *
 
@@ -63,20 +64,22 @@ class OscToMidi:
         """
         Route OSC messages to corresponding controller function
         """
-        dc = self._dawConfig
+        dc = self.dawConfig
         # Faders
-        self.dispatcher.map(dc.getFaderAddress(), self._dispatchFader)
+        #self.dispatcher.map(dc.getFaderAddress(), self._dispatchFader)
         
         # Buttons line1
-        self.dispatcher.map(dc.getButtonValue(1, self.buttonMode), self._dispatchButtonsLine1)
+        self.dispatcher.map(dc.getButtonAddress(1, self.buttonMode), self._dispatchButtonsLine1)
         
         # Buttons line2
-        self.dispatcher.map(dc.getButtonValue(2, self.buttonMode), self._dispatchButtonsLine2)
+        #self.dispatcher.map(dc.getButtonValue(2, self.buttonMode, True), self._dispatchButtonsLine2)
 
+        """
         # Function buttons
-        for fButton in dc["function"]:
-            self.dispatcher.map(dc["function"][fButton], self._dispatchFunctionButtons, fButton )
-        
+        for fButton in dc.getFunctionAddress():
+            self.dispatcher.map(dc.getFunctionAddress(fButton), self._dispatchFunctionButtons, fButton )
+        """
+
         # Other
         self.dispatcher.map("/debug", print)
 
@@ -85,10 +88,10 @@ class OscToMidi:
         """
         Convert fader OSC value to MIDI value
         """
-        faderMidiRange = self._ctrlConfig["fader"]["move"]["valueRange"]
-        faderOSCRange = self._dawConfig["strip"]["fader"]["valueRange"]
-        faderMove = self._ctrlConfig["fader"]["move"]["type"]
-        readyVal = convertValueToMidiRange(faderValue, dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
+        faderMidiRange = self.ctrlConfig.getFaderMidiRange()
+        faderOSCRange = self.dawConfig.getFaderOSCRange()
+        faderMove = self.ctrlConfig.getFaderMove("type")
+        readyVal = convertValueToMidiRange(faderValue, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
         midiMessage = "{} ch: {} value:{}".format(faderMove, stripId, readyVal)
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,faderValue, midiMessage))
         
@@ -107,14 +110,11 @@ class OscToMidi:
         if self.buttonMode == "solomute" and "rec" in address:
             return
         
-        buttonsMidiNotes  = self._ctrlConfig["buttons"]["line1"]["notes"]
-        buttonsMidiType = self._ctrlConfig["buttons"]["line1"]["type"]
-        buttonsMidiOctave = self._ctrlConfig["buttons"]["line1"]["octave"]
-        buttonsMidiValueOn = self._ctrlConfig["buttons"]["line1"]["valueOn"]
-        buttonsMidiValueOff = self._ctrlConfig["buttons"]["line1"]["valueOff"]
-        
+        buttonsMidiNotes  = self.ctrlConfig.getButtonNotes("line1")
+        buttonsMidiType = self.ctrlConfig.getButtonType("line1")
+        #TODO fix this
         midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],buttonsMidiOctave)
-        midiVelocity = buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
+        midiVelocity = 127 #buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
 
         msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))

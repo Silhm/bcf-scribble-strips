@@ -13,8 +13,14 @@ class ControllerConfig:
     def getFaderNotes(self):
         return self.ctrlConfig["fader"]["touch"]["notes"]
 
+    def getFaderMove(self, k):
+        return self.ctrlConfig["fader"]["move"][k]
+
     def getButtonNotes(self, line):
         return self.ctrlConfig["buttons"][line]["notes"]
+    
+    def getButtonType(self, line):
+        return self.ctrlConfig["buttons"][line]["type"]
 
     def getfButtonNote(self,fname):
         return self.ctrlConfig["fbuttons"][fname]
@@ -87,8 +93,11 @@ class DawConfig:
             return self.dawConfig["strip"]["mute" if controllerButtonMode == "solomute" else "rec"][val]
 
 
-    def getFunctionAddress(self, fname):
-        return self.dawConfig["function"][fname]
+    def getFunctionAddress(self, fname=False):
+        if(fname):
+            return self.dawConfig["function"][fname]
+        else:
+            return self.dawConfig["function"]
 
 
     def getVpotAddress(self, controllerVpotMode):

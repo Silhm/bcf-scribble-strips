@@ -82,9 +82,12 @@ class MidiToOSC:
             self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
 
         # NOTE ON
-        if midiMessage.type == "note_on" or midiMessage.type == "note_off":
+        # TODO : toggle not on/off with one click
+        if midiMessage.type == "note_on": #or midiMessage.type == "note_off":
             midiNote = midiNumberToFullNote(midiMessage.note)
             noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
+            if(midiMessage.velocity == 0):
+                return
 
             print("Midi Note: {}".format(midiNote))
 
@@ -93,8 +96,8 @@ class MidiToOSC:
                 buttonId = buttonNotes.index(midiNote)
                 self._handleButtons(1,buttonId,noteOn)
             elif(midiNote in buttonNotesl2):
-                buttonId = buttonNotes.index(midiNote)
-                self._handleButtons(1,buttonId,noteOn)
+                buttonId = buttonNotesl2.index(midiNote)
+                self._handleButtons(2,buttonId,noteOn)
  
             # vPot click
             if(midiNote in vPotNotes):

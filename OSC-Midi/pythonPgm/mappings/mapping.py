@@ -18,7 +18,24 @@ class ControllerConfig:
 
     def getfButtonNote(self,fname):
         return self.ctrlConfig["fbuttons"][fname]
+    
+    def getfButtonNotes(self):
+        allB = []
+        fButtons = self.ctrlConfig["fbuttons"]
+        fButtonsName = sorted(self.ctrlConfig["fbuttons"])
+        for fb in fButtonsName:
+            allB.append(fButtons[fb]["note"])
+        return allB
+ 
+    def getBankButtonNotes(self):
+        up = self.ctrlConfig["bank"]["up"]["note"]
+        down = self.ctrlConfig["bank"]["down"]["note"]
+        return [down,up]
+         
+    def getVpotButtonNotes(self):
+        return self.ctrlConfig["vPot"]["switch"]["notes"]
 
+    
 
 
 
@@ -28,6 +45,7 @@ class DawConfig:
         # Get the DAW OSC configuration
         with open('mappings/daw-osc/'+dawName+'.json', 'r') as f:
             self.dawConfig = json.load(f)
+
 
     def getFaderAddress(self):
         return self.dawConfig["strip"]["fader"]["address"]
@@ -39,6 +57,7 @@ class DawConfig:
         elif line == 2:
             return self.dawConfig["strip"]["mute" if controllerButtonMode == "solomute" else "rec"]["address"]
 
+
     def getButtonValue(self, line, controllerButtonMode, on):
         val = "valueOn" if on else "valueOff"
         if line == 1:
@@ -46,10 +65,13 @@ class DawConfig:
         elif line == 2:
             return self.dawConfig["strip"]["mute" if controllerButtonMode == "solomute" else "rec"][val]
 
-                                                     
 
-
-    def getFunctionAddress(self,fname):
+    def getFunctionAddress(self, fname):
         return self.dawConfig["function"][fname]
+
+
+    def getVpotAddress(self, controllerVpotMode):
+        return self.dawConfig["strip"]["panStereoPosition" if controllerVpotMode == "pan" else "gain"]["address"]
+
 
 

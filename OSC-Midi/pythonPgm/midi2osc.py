@@ -40,6 +40,7 @@ class MidiToOSC:
         self.ctrlConfig = ControllerConfig(CONTROLLER_NAME)
 
         self.buttonMode = "solomute"
+        self.vPotMode   = "pan"
         self.bank = 0
 
 
@@ -66,84 +67,67 @@ class MidiToOSC:
         print(" > route message: {}".format(midiMessage))
         
         faderNotes = map(midiFullNoteToNumber, self.ctrlConfig.getFaderNotes())
-        #vPotNotes = ["G#", "A", "A#", "B", "C", "C#", "D", "D#"]
+        vPotNotes = self.ctrlConfig.getVpotButtonNotes()
         buttonNotes = self.ctrlConfig.getButtonNotes("line1")
         buttonNotesl2 = self.ctrlConfig.getButtonNotes("line2")
+        
+        fButtonNotes = self.ctrlConfig.getfButtonNotes()
+        bankButtonNotes = self.ctrlConfig.getBankButtonNotes()
  
 
         # NOTE ON
-        if midiMessage.type == "note_on" or  midiMessage.type == "note_off":
-            midiNote = midiNumberToNote(midiMessage.note)
-            note = midiNote[0]
-            octave = midiNote[1]
-
+        if midiMessage.type == "note_on" or midiMessage.type == "note_off":
+            midiNote = midiNumberToFullNote(midiMessage.note)
             noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
 
-            # Octave 7 is the fader touched
-            if(octave == 7 and note in faderNotes):
-                faderId = faderNotes.index(note)
-                print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
+            print("Midi Note: {}".format(midiNote))
 
             # Buttons first and second line
-            if(octave == 0 and note in buttonNotes):
-                buttonId = buttonNotes.index(note) 
-                # octave 0 -> line 1
+            if(midiNote in buttonNotes):
+                buttonId = buttonNotes.index(midiNote)
                 self._handleButtons(1,buttonId,noteOn)
-            if(octave == 1 and note in buttonNotesl2):
-                buttonId = buttonNotesl2.index(note) 
-                # octave 1 -> line 2
-                self._handleButtons(2,buttonId,noteOn)
+            elif(midiNote in buttonNotesl2):
+                buttonId = buttonNotes.index(midiNote)
+                self._handleButtons(1,buttonId,noteOn)
+ 
+            # vPot click
+            if(midiNote in vPotNotes):
+                vPotId = vPotNotes.index(midiNote)+1
+                self._handleVpotClick(vPotId, noteOn)
             
-            # Encoder groups
+            # Fader touched
+            if(midiNote in faderNotes):
+                faderId = faderNotes.index(midiNote)
+                print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
+             
+            # Fader moves : Pitchwheel 
+            if midiMessage.type == "pitchwheel" :
+                self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
+            
+
+            # Encoder groups : only 2 of 4 are working... need investigation
+            """
             # Top right
-            if(octave == 4 and note == "A#"):
+            if(midNote == "A#4"):
                 self._handleEncoderGrpButtons("TopRight", noteOn)
             # Bottom right
-            if(octave == 3 and note == "D#"):
+            if(midiNote == "D#3"):
                 self._handleEncoderGrpButtons("BottomRight", noteOn)
-
-            # vPot click
-            """ Not yet
-            if(octave == 1 and note in knobNotes):
-                knobId = knobNotes.index(note)
-                print("Knob : "+ str(buttonId+1)+" clicked "+str(noteOn))
             """
-
+           
+            # Function Buttons
+            if(midiNote in fButtonNotes):
+                print("Function button!")
+                fId = "F{}".format(fButtonNotes.index(midiNote)+1)
+                self._handleFunctionButtons(fId, noteOn)
             
-            
+            # Preset / Bank buttons
+            if(midiNote in bankButtonNotes):
+                print("button!")
+                updown = "up" if bankButtonNotes.index(midiNote) == 0 else "down"
+                self._handleBankButtons(updown, noteOn)
 
-            # Other Buttons
-            if(octave == 2):
-                if(note == "G#"):
-                    self._handleFunctionButtons("F1", noteOn)
-                if(note == "G"):
-                    self._handleFunctionButtons("F2", noteOn)
-                if(note == "F#"):
-                    self._handleFunctionButtons("F3", noteOn)
-                if(note == "F"):
-                    self._handleFunctionButtons("F4", noteOn)
-
-                # Preset / Bank 
-                if(note == "A#"):
-                    self._handleBankButtons("<", noteOn)
-                if(note == "B"):
-                    self._handleBankButtons(">", noteOn)
-    
-            # Four buttons in bottom of the BCF 
-            if octave == 6 :
-                if(note == "G"):
-                    self._handleFunctionButtons("F5", noteOn)
-                if(note == "G#"):
-                    self._handleFunctionButtons("F6", noteOn)
-                if(note == "A"):
-                    self._handleFunctionButtons("F7", noteOn)
-                if(note == "A#"):
-                    self._handleFunctionButtons("F8", noteOn)
-
-        #pitchwheel
-        if midiMessage.type == "pitchwheel" :
-            self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
-            
+           
 
     def read(self):
         """ Read Midi message """
@@ -187,16 +171,14 @@ class MidiToOSC:
         self.sendOSCMessage(address, [])
 
 
-
-
     def _handleBankButtons(self, name, clicked):
         """
         Handle bank buttons
         """
         print("Bank" + str(name) +" "+str(clicked))
-        if clicked and name == ">":
+        if clicked and name == "up":
             self.bank = self.bank + 1
-        elif clicked and name == "<" and self.bank >0:
+        elif clicked and name == "down" and self.bank >0:
             self.bank = self.bank - 1
         print("       >> BANK "+str(self.bank))
 
@@ -216,6 +198,18 @@ class MidiToOSC:
         self.sendOSCMessage(address, values)
 
 
+    def _handleVpotClick(self, id, clicked):
+        """
+        Handle vPot click: restore default pan or gain
+        """
+        vPotId = id + (self.bank * BANK_SIZE)
+        address = self.dawConfig.getVpotAddress(self.vPotMode)
+
+        val = 0.5 if self.vPotMode == "pan" else 666
+
+        values = [vPotId, val]
+        self.sendOSCMessage(address, values)
+        
 
 
 if __name__ == "__main__":

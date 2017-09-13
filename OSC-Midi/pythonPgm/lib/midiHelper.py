@@ -16,6 +16,15 @@ def midiNumberToNote(number):
     return (note,octave)
 
 
+def midiNumberToFullNote(number):
+    _notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    index = number % 12
+    note = _notes[index]
+    octave = int((number-12)/12)
+    #print("MIDI Note number "+str(number)+" : "+str(note)+str(octave))
+    return "{}{}".format(note,octave)
+
+
 def midiFullNoteToNumber(fullNote):
     """
     Convert a note like A1, G#4 or F#-1 to a number

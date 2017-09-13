@@ -35,7 +35,28 @@ class ControllerConfig:
     def getVpotButtonNotes(self):
         return self.ctrlConfig["vPot"]["switch"]["notes"]
 
+    def getVpotCC(self):
+        return self.ctrlConfig["vPot"]["pot"]["CC"]
     
+    def getVpotRotation(self, val):
+        rotations = self.ctrlConfig["vPot"]["pot"]["rotation"]
+        
+        CW  = rotations["CW"]
+        CCW = rotations["CCW"]
+
+        direction = "CW"
+
+        if val < CW + 5:
+            speed = val - (CW-1) 
+            direction = "CW"
+        else:
+            speed = val - (CCW-1)
+            direction = "CCW"
+
+        return (direction, speed)
+
+    def getFaderMidiRange(self):
+        return self.ctrlConfig["fader"]["move"]["valueRange"]
 
 
 
@@ -73,5 +94,6 @@ class DawConfig:
     def getVpotAddress(self, controllerVpotMode):
         return self.dawConfig["strip"]["panStereoPosition" if controllerVpotMode == "pan" else "gain"]["address"]
 
-
+    def getFaderOSCRange(self):
+        return self.dawConfig["strip"]["fader"]["valueRange"]
 

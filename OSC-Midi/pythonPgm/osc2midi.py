@@ -34,27 +34,14 @@ class OscToMidi:
         self.midiOUT = mido.open_output(midiPort)
 
         # Get the DAW OSC configuration
-        with open('mappings/daw-osc/'+DAW_NAME+'.json', 'r') as f:
-            self._dawConfig = json.load(f)
-               
-        # Get the Controller MIDI configuration
-        with open('mappings/controllers/'+CONTROLLER_NAME+'.json', 'r') as f2:
-            self._ctrlConfig = json.load(f2)
+        self.dawConfig = DawConfig(DAW_NAME)
 
+        # Get the Controller MIDI configuration
+        self.ctrlConfig = ControllerConfig(CONTROLLER_NAME)
 
         self.buttonMode = "solomute"
         self.bank = 0
 
-
-        """
-        TODO
-            wait for OSC
-            route OSC message
-            save configs to a database
-            convert it to MIDI
-            send midi
-            profit!
-        """
 
 
         
@@ -67,32 +54,31 @@ class OscToMidi:
         server = osc_server.ThreadingOSCUDPServer(
                       (self.ipAddr, self.port), self.dispatcher)
         print("Serving on {}".format(server.server_address))
+        # TODO : display this config on OLED displays
         server.serve_forever()
 
 
 
     def _routes(self):
+        """
+        Route OSC messages to corresponding controller function
+        """
         dc = self._dawConfig
-        # get all necessary osc Address to change controller state
-        #faders
-        self.dispatcher.map(dc["strip"]["fader"]["address"], self._dispatchFader)
+        # Faders
+        self.dispatcher.map(dc.getFaderAddress(), self._dispatchFader)
         
-        #buttons line1
-        self.dispatcher.map(dc["strip"]["solo"]["address"], self._dispatchButtonsLine1)
-        self.dispatcher.map(dc["strip"]["select"]["address"] , self._dispatchButtonsLine1)
+        # Buttons line1
+        self.dispatcher.map(dc.getButtonValue(1, self.buttonMode), self._dispatchButtonsLine1)
         
-        #buttons line2
-        self.dispatcher.map(dc["strip"]["mute"]["address"], self._dispatchButtonsLine2)
-        self.dispatcher.map(dc["strip"]["rec"]["address"], self._dispatchButtonsLine2)
+        # Buttons line2
+        self.dispatcher.map(dc.getButtonValue(2, self.buttonMode), self._dispatchButtonsLine2)
 
-        #function buttons
+        # Function buttons
         for fButton in dc["function"]:
             self.dispatcher.map(dc["function"][fButton], self._dispatchFunctionButtons, fButton )
         
-        
+        # Other
         self.dispatcher.map("/debug", print)
-
-
 
 
     def _dispatchFader(self, address, stripId, faderValue):
@@ -102,25 +88,24 @@ class OscToMidi:
         faderMidiRange = self._ctrlConfig["fader"]["move"]["valueRange"]
         faderOSCRange = self._dawConfig["strip"]["fader"]["valueRange"]
         faderMove = self._ctrlConfig["fader"]["move"]["type"]
-        readyVal = self.convertValueToMidiRange(faderValue, faderOSCRange, faderMidiRange)
+        readyVal = convertValueToMidiRange(faderValue, dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
         midiMessage = "{} ch: {} value:{}".format(faderMove, stripId, readyVal)
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,faderValue, midiMessage))
         
         msg = mido.Message('pitchwheel', pitch=readyVal, channel=stripId)
         self.midiOUT.send(msg)
-        # TODO: handle bank
+        # TODO: handle bank (should be available in database or memory)
 
 
     def _dispatchButtonsLine1(self, address, stripId, buttonValue):
         """
         Convert Solo / Rec OSC value to MIDI value
         """
-        #Get surface mode and display accordingly
+        # TODO: Get surface mode and display accordingly
 
-        #Do nothing if not good mode
+        # Do nothing if not good mode
         if self.buttonMode == "solomute" and "rec" in address:
             return
-
         
         buttonsMidiNotes  = self._ctrlConfig["buttons"]["line1"]["notes"]
         buttonsMidiType = self._ctrlConfig["buttons"]["line1"]["type"]
@@ -132,19 +117,17 @@ class OscToMidi:
         midiVelocity = buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
 
         msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
-        self.midiOUT.send(msg)
-
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))
-
-
+        self.midiOUT.send(msg)
 
 
     def _dispatchButtonsLine2(self, address, stripId, buttonValue):
         """
         Convert Mute / Select OSC value to MIDI value
         """
-        #Get surface mode and display accordingly
+        # TODO: Get surface mode and display accordingly
         
+        # Do nothing if not good mode
         if self.buttonMode == "solomute" and "select" in address:
             return
 
@@ -158,10 +141,8 @@ class OscToMidi:
         midiVelocity = buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
 
         msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
-        self.midiOUT.send(msg)
-        
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))
-    
+        self.midiOUT.send(msg)
 
 
     def _dispatchFunctionButtons(self, address, bname):
@@ -169,7 +150,6 @@ class OscToMidi:
         Convert Mute / Select OSC value to MIDI value
         """
         bname = bname[0]
-        #midiFullNoteToNumber()
         
         fNote  = midiFullNoteToNumber(self._ctrlConfig["fbuttons"][bname]["note"])
         fVelocity = self._ctrlConfig["fbuttons"][bname]["valueOn"]
@@ -177,31 +157,8 @@ class OscToMidi:
         fType = self._ctrlConfig["fbuttons"][bname]["type"]
 
         msg = mido.Message(fType, note=fNote, velocity=fVelocity, channel=fChannel)
-        self.midiOUT.send(msg)
-
         print("Dispatching OSC: {} (mapped to {}) to MIDI: {}  ".format(address,bname, msg))
-
-
-
-
-    def convertValueToMidiRange(self, oscValue, oscRange, midiRange):
-        """
-        value : OSC value
-        OscRange: 
-        midiRange
-        """        
-        minOSC = oscRange[0]
-        maxOSC = oscRange[1]
-
-        minMidi = midiRange[0]
-        maxMidi = midiRange[1]
-
-        percent = (oscValue - minOSC ) / (maxOSC-minOSC) * 100.0
-        midiVal = (maxMidi - minMidi) * percent  / 100 + minMidi
-
-        return int(midiVal)
-
-
+        self.midiOUT.send(msg)
 
 
 

@@ -35,3 +35,38 @@ def midiFullNoteToNumber(fullNote):
     if m:
         return int(midiNoteToNumber(str(m.group(1)), float(m.group(2))))
     
+
+def convertValueToMidiRange(oscValue, oscRange, midiRange):
+    """
+    value : OSC value
+    OscRange: 
+    midiRange
+    """
+    minOSC = oscRange[0]
+    maxOSC = oscRange[1]
+
+    minMidi = midiRange[0]
+    maxMidi = midiRange[1]
+
+    percent = (oscValue - minOSC ) / (maxOSC-minOSC) * 100.0
+    midiVal = (maxMidi - minMidi) * percent  / 100 + minMidi
+
+    return int(midiVal)
+
+
+def convertValueToOSCRange(midiValue, oscRange, midiRange):
+    """
+    value : OSC value
+    OscRange: 
+    midiRange
+    """
+    minOSC = oscRange[0]
+    maxOSC = oscRange[1]
+
+    minMidi = midiRange[0]
+    maxMidi = midiRange[1]
+
+    percent = (midiValue - minMidi ) / (maxMidi-minMidi) * 100.0
+    oscVal = (maxOSC - minOSC) * percent  / 100 + minOSC
+
+    return oscVal

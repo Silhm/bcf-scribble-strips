@@ -39,6 +39,7 @@ class MidiToOSC:
         # Get the Controller MIDI configuration
         self.ctrlConfig = ControllerConfig(CONTROLLER_NAME)
 
+        # TODO: be able to switch this from controller 
         self.buttonMode = "solomute"
         self.vPotMode   = "pan"
         self.bank = 0
@@ -68,12 +69,17 @@ class MidiToOSC:
         
         faderNotes = map(midiFullNoteToNumber, self.ctrlConfig.getFaderNotes())
         vPotNotes = self.ctrlConfig.getVpotButtonNotes()
+        vPotCC = self.ctrlConfig.getVpotCC()
         buttonNotes = self.ctrlConfig.getButtonNotes("line1")
         buttonNotesl2 = self.ctrlConfig.getButtonNotes("line2")
         
         fButtonNotes = self.ctrlConfig.getfButtonNotes()
         bankButtonNotes = self.ctrlConfig.getBankButtonNotes()
  
+
+        # Fader moves : Pitchwheel 
+        if midiMessage.type == "pitchwheel" :
+            self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
 
         # NOTE ON
         if midiMessage.type == "note_on" or midiMessage.type == "note_off":
@@ -99,11 +105,6 @@ class MidiToOSC:
             if(midiNote in faderNotes):
                 faderId = faderNotes.index(midiNote)
                 print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
-             
-            # Fader moves : Pitchwheel 
-            if midiMessage.type == "pitchwheel" :
-                self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
-            
 
             # Encoder groups : only 2 of 4 are working... need investigation
             """
@@ -127,7 +128,15 @@ class MidiToOSC:
                 updown = "up" if bankButtonNotes.index(midiNote) == 0 else "down"
                 self._handleBankButtons(updown, noteOn)
 
-           
+        # CC
+        elif midiMessage.type == "control_change":
+            cc  = midiMessage.control
+            val = midiMessage.value
+    
+            if(cc in vPotCC):
+                vPotId = vPotCC.index(cc) + 1
+                self._handleVpotRot(vPotId,val)
+
 
     def read(self):
         """ Read Midi message """
@@ -189,12 +198,11 @@ class MidiToOSC:
         """
         faderId = (ch + 1) + self.bank*BANK_SIZE
         
-        #TODo convert value to OSC readable
-        faderValue = value
+        faderValue = convertValueToOSCRange(value, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
 
         address = self.dawConfig.getFaderAddress()
         values = [faderId, faderValue]
-
+    
         self.sendOSCMessage(address, values)
 
 
@@ -209,7 +217,19 @@ class MidiToOSC:
 
         values = [vPotId, val]
         self.sendOSCMessage(address, values)
-        
+ 
+
+    def _handleVpotRot(self, id, value):
+        """
+        Handle vPot rotation 
+        """
+        vPotId = id + (self.bank * BANK_SIZE)
+        #address = self.dawConfig.getVpotAddress(self.vPotMode)
+        rotation = self.ctrlConfig.getVpotRotation(value)
+
+        print("pot Rot {} {}".format(id,rotation))
+        # TODO: need to handle rotation
+       
 
 
 if __name__ == "__main__":

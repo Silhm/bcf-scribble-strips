@@ -1,59 +1,90 @@
-from sqlalchemy import *
+from pymongo import MongoClient
+client = MongoClient()
+db = client.midiosc
+
+print("=== This will drop all configuration an make a factory reset ===")
+
+daw = input('Enter the daw used: (default is Ardour) ')
+daw = daw if daw else "ardour"
+
+controller = input('Enter the controller: (default is BCF2000) ')
+controller = controller if controller else "bcf2000"
+
+ctrlNumber = input('How many?: (default is 1) ')
+ctrlNumber = ctrlNumber if ctrlNumber else 1
 
 
-
-daw = input('Enter the daw used: ')
-controller = input('Enter the controller: ')
-ctrlNumber = input('How many?: ')
+client.drop_database(db)
 
 
+# Daw
+dawConfig = db.dawConfig
+
+defaultDawConfig = {
+        "dawName": "ardour",
+        "ip": "127.0.0.1",
+        "port": 8000
+        }
+
+dawConfig.insert_one(defaultDawConfig)
 
 
-db = create_engine('sqlite:///midiosc.db')
+# Controller
+controllerConfig = db.controllerConfig
 
-db.echo = False  # Try changing this to True and see what happens
+defaultControllerConfig = {
+        "controllerName": "bcf2000",
+        "bankSize": 8,
+        "count": 1
+}
+controllerConfig.insert_one(defaultControllerConfig)
 
-metadata = MetaData(db)
+# Controller state
+controllerState = db.controllerState
 
-dawConfig = Table('daw_config', metadata,
-            Column('conf_id', Integer, primary_key=True),
-            Column('dawName', String(40)),
-            Column('ip', Integer),
-            Column('port', String),
-        )
-
-controllerConfig = Table('controller_config', metadata,
-            Column('conf_id', Integer, primary_key=True),
-            Column('controllerName', String(40)),
-            Column('bankSize', Integer),
-            Column('count', Integer),
-        )
-
-controllerState = Table('controller_state', metadata,
-            Column('state_id', Integer, primary_key=True),
+defaultControllerState = {
             # 'gain' or 'pan'
-            Column('knob_mode', String(40)),  
+            "knob_mode" : "pan",
             # 'level' or '???'
-            Column('fader_mode', String(40)),
-            # 0: normal, 1: send_mode on
-            Column('send_mode', Integer),
+            "fader_mode" : "level",
             # 'solomute' or 'selectrec'
-            Column('buttons_mode', Integer),
+            "buttons_mode" : "solomute",
             # current bank
-            Column('bank', Integer)
-        )
+            "bank" : 0
+}
+controllerState.insert_one(defaultControllerState)
 
+# DAW Session
+dawSession = db.dawSession
 
-dawConfig.create()
-controllerConfig.create()
-controllerState.create()
+defaultDawSession = {
+        "sessionName": "default Session",
+        "strips" : [
+            {
+                "id": 1,
+                "name": "track 1",
+                "fader" : 0,
+                "gain": 0,
+                "pan": 0.5,
+                "mute": False,
+                "solo": False,
+                "rec": False,
+                "select": True,
+                "polarity": False
+            }
+         ],
+        "master" : {
+            "fader" : 0,
+            "gain": 0,
+            "pan": 0.5,
+            "mute": False,
+         },
+        "transport": {
+            "play": False,
+            "recArm": False,
+            "loop": False
+        }
+}
 
-
-#default data
-confI = dawConfig.insert()
-confI.execute(conf_id=1, dawName=daw, ip='127.0.0.1', port='8000')
-
-stateI = controllerState.insert()
-stateI.execute(state_id=1, knob_mode='pan', fader_mode='level', send_mode=0, buttons_mode='solomute')
-
+dawSession.insert_one(defaultDawSession)
 

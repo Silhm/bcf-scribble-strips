@@ -37,7 +37,7 @@ if __name__ == "__main__":
   client = udp_client.UDPClient(args.ip, args.port)
 
 
-  strip = 0
+  strip = 1
   buttonOn = 1
   for i in range(100):
     
@@ -72,8 +72,8 @@ if __name__ == "__main__":
 
 
     strip=strip+1
-    if strip > 7:
-        strip = 0
+    if strip > 16:
+        strip = 1
 
 
     time.sleep(0.1)

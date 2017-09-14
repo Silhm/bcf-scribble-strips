@@ -13,13 +13,10 @@ from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
 from lib.midiHelper import *
+from lib.database import Database
+
 from mappings.mapping import ControllerConfig, DawConfig
 
-
-# Edit this to load right conf file
-DAW_NAME = "ardour"
-CONTROLLER_NAME = "bcf2000"
-BANK_SIZE = 8 
 
 class MidiToOSC:
 
@@ -33,16 +30,13 @@ class MidiToOSC:
         midiPort = mido.get_input_names()[0]
         self.midiIN = mido.open_input(midiPort)
 
+        self.db = Database()
+
         # Get the DAW OSC configuration
-        self.dawConfig = DawConfig(DAW_NAME)
+        self.dawConfig = DawConfig(self.db.getDawName())
 
         # Get the Controller MIDI configuration
-        self.ctrlConfig = ControllerConfig(CONTROLLER_NAME)
-
-        # TODO: be able to switch this from controller 
-        self.buttonMode = "solomute"
-        self.vPotMode   = "pan"
-        self.bank = 0
+        self.ctrlConfig = ControllerConfig(self.db.getControllerName())
 
 
     def sendOSCMessage(self, address, values):
@@ -154,10 +148,14 @@ class MidiToOSC:
         """
         Handle the two lines of buttons : Solo / mute or Select / Rec
         """
-        address = self.dawConfig.getButtonAddress(line, self.buttonMode)
-        value = self.dawConfig.getButtonValue(line, self.buttonMode,noteOn)
+        buttonMode = self.db.getButtonMode()
+        address = self.dawConfig.getButtonAddress(line, buttonMode)
+        value = self.dawConfig.getButtonValue(line, buttonMode, noteOn)
 
-        buttonId = (bId +1)+ self.bank*BANK_SIZE
+        bank = self.db.getCurrentBank()
+        bankSize = self.db.getBankSize()
+
+        buttonId = (bId +1)+ bank*bankSize
         values = [buttonId, value]
         self.sendOSCMessage(address, values)
 
@@ -166,12 +164,13 @@ class MidiToOSC:
         """
         Handle the Encoder groups button (only top and bottom right)
         """
+        #TODO: write this in database
         if clicked and name == "TopRight" :
-            self.buttonMode = "solomute"
+            self.db.setButtonMode("solomute")
         elif clicked and name == "BottomRight":
-            self.buttonMode = "selectrec"
+            self.db.setButtonMode("selectrec")
 
-        print("button mode: "+self.buttonMode)
+        print("button mode: {}".format(self.db.getButtonMode()))
 
 
     def _handleFunctionButtons(self, name, clicked):
@@ -188,18 +187,23 @@ class MidiToOSC:
         Handle bank buttons
         """
         print("Bank" + str(name) +" "+str(clicked))
+        bank = self.db.getCurrentBank()
+
         if clicked and name == "up":
-            self.bank = self.bank + 1
+            bank = self.db.bankUp()
         elif clicked and name == "down" and self.bank >0:
-            self.bank = self.bank - 1
-        print("       >> BANK "+str(self.bank))
+            bank = self.db.bankDown()
+        print("       >> BANK "+str(bank))
 
 
     def _handlePitchWheel(self, ch, value):
         """
         Handle fader moves
         """
-        faderId = (ch + 1) + self.bank*BANK_SIZE
+        bank = self.db.getCurrentBank()
+        bankSize = self.db.getBankSize()
+
+        faderId = (ch + 1) + bank*bankSize
         
         faderValue = convertValueToOSCRange(value, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
 
@@ -213,7 +217,10 @@ class MidiToOSC:
         """
         Handle vPot click: restore default pan or gain
         """
-        vPotId = id + (self.bank * BANK_SIZE)
+        bank = self.db.getCurrentBank()
+        bankSize = self.db.getBankSize()
+
+        vPotId = id + (bank * bankSize)
         address = self.dawConfig.getVpotAddress(self.vPotMode)
 
         val = 0.5 if self.vPotMode == "pan" else 666
@@ -226,7 +233,10 @@ class MidiToOSC:
         """
         Handle vPot rotation 
         """
-        vPotId = id + (self.bank * BANK_SIZE)
+        bank = self.db.getCurrentBank()
+        bankSize = self.db.getBankSize()
+
+        vPotId = id + (bank * bankSize)
         #address = self.dawConfig.getVpotAddress(self.vPotMode)
         rotation = self.ctrlConfig.getVpotRotation(value)
 

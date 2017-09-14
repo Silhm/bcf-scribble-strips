@@ -13,37 +13,27 @@ from pythonosc import dispatcher
 from pythonosc import osc_server
 
 from lib.midiHelper import *
+from lib.database import Database
+
 from mappings.mapping import ControllerConfig, DawConfig
 
-from sqlalchemy import *
-
-
-DAW_NAME = "ardour"
-CONTROLLER_NAME = "bcf2000"
-BANK_SIZE = 8
 
 class OscToMidi:
     def __init__(self, ipAddr, port ):
         self.ipAddr = ipAddr
         self.port = port
         
-        self.db = create_engine('sqlite:///midiosc.db')
-
+        self.db = Database()
 
         # Init Midi client and display available devices
         midiPort = mido.get_output_names()[0]
         self.midiOUT = mido.open_output(midiPort)
 
         # Get the DAW OSC configuration
-        self.dawConfig = DawConfig(DAW_NAME)
+        self.dawConfig = DawConfig(self.db.getDawName())
 
         # Get the Controller MIDI configuration
-        self.ctrlConfig = ControllerConfig(CONTROLLER_NAME)
-
-        self.buttonMode = "solomute"
-        self.bank = 0
-
-
+        self.ctrlConfig = ControllerConfig(self.db.getControllerName())
 
         
     def waitForOscMessage(self):
@@ -65,14 +55,16 @@ class OscToMidi:
         Route OSC messages to corresponding controller function
         """
         dc = self.dawConfig
+        buttonMode = self.db.getButtonMode()
+
         # Faders
-        #self.dispatcher.map(dc.getFaderAddress(), self._dispatchFader)
+        self.dispatcher.map(dc.getFaderAddress(), self._dispatchFader)
         
         # Buttons line1
-        self.dispatcher.map(dc.getButtonAddress(1, self.buttonMode), self._dispatchButtonsLine1)
+        #self.dispatcher.map(dc.getButtonAddress(1, buttonMode), self._dispatchButtonsLine1)
         
         # Buttons line2
-        self.dispatcher.map(dc.getButtonAddress(2, self.buttonMode), self._dispatchButtonsLine2)
+        #self.dispatcher.map(dc.getButtonAddress(2, buttonMode), self._dispatchButtonsLine2)
 
         """
         # Function buttons
@@ -92,12 +84,24 @@ class OscToMidi:
         faderOSCRange = self.dawConfig.getFaderOSCRange()
         faderMove = self.ctrlConfig.getFaderMove("type")
         readyVal = convertValueToMidiRange(faderValue, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
-        midiMessage = "{} ch: {} value:{}".format(faderMove, stripId, readyVal)
-        print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,faderValue, midiMessage))
         
-        msg = mido.Message('pitchwheel', pitch=readyVal, channel=stripId)
-        self.midiOUT.send(msg)
         # TODO: handle bank (should be available in database or memory)
+        # stripId with bank handle
+        bank = self.db.getCurrentBank()
+        bankSize = self.db.getBankSize()
+        
+        sId = stripId
+
+        # need to stay in 1 -> bankSize range
+        if(sId > bankSize):
+            sId = (sId % bankSize) + 1
+
+
+        midiMessage = "{} ch: {} value:{}".format(faderMove, sId, readyVal)
+        print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,sId,faderValue, midiMessage))
+        
+        msg = mido.Message('pitchwheel', pitch=readyVal, channel=sId)
+        self.midiOUT.send(msg)
 
 
     def _dispatchButtonsLine1(self, address, stripId, buttonValue):
@@ -105,7 +109,9 @@ class OscToMidi:
         Convert Solo / Rec OSC value to MIDI value
         """
         # Do nothing if not good mode
-        if self.buttonMode == "solomute" and "rec" in address:
+        buttonMode = self.db.getButtonMode()
+
+        if buttonMode == "solomute" and "rec" in address:
             return
     
         line = 1
@@ -123,8 +129,10 @@ class OscToMidi:
         """
         Convert Mute / Select OSC value to MIDI value
         """
+        buttonMode = self.db.getButtonMode()
+
         # Do nothing if not good mode
-        if self.buttonMode == "solomute" and "select" in address:
+        if buttonMode == "solomute" and "select" in address:
             return
         
         line = 2

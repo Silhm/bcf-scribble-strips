@@ -72,7 +72,7 @@ class OscToMidi:
         self.dispatcher.map(dc.getButtonAddress(1, self.buttonMode), self._dispatchButtonsLine1)
         
         # Buttons line2
-        #self.dispatcher.map(dc.getButtonValue(2, self.buttonMode, True), self._dispatchButtonsLine2)
+        self.dispatcher.map(dc.getButtonAddress(2, self.buttonMode), self._dispatchButtonsLine2)
 
         """
         # Function buttons
@@ -104,18 +104,16 @@ class OscToMidi:
         """
         Convert Solo / Rec OSC value to MIDI value
         """
-        # TODO: Get surface mode and display accordingly
-
         # Do nothing if not good mode
         if self.buttonMode == "solomute" and "rec" in address:
             return
-        
-        buttonsMidiNotes  = self.ctrlConfig.getButtonNotes("line1")
-        buttonsMidiType = self.ctrlConfig.getButtonType("line1")
-        #TODO fix this
-        midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],buttonsMidiOctave)
-        midiVelocity = 127 #buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
+    
+        line = 1
+        buttonsMidiNotes  = self.ctrlConfig.getButtonNotes(line)
+        buttonsMidiType = self.ctrlConfig.getButtonType(line)
 
+        midiNote = midiFullNoteToNumber(buttonsMidiNotes[stripId])
+        midiVelocity = 127 #buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
         msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))
         self.midiOUT.send(msg)
@@ -125,21 +123,16 @@ class OscToMidi:
         """
         Convert Mute / Select OSC value to MIDI value
         """
-        # TODO: Get surface mode and display accordingly
-        
         # Do nothing if not good mode
         if self.buttonMode == "solomute" and "select" in address:
             return
-
-        buttonsMidiNotes  = self._ctrlConfig["buttons"]["line2"]["notes"]
-        buttonsMidiType = self._ctrlConfig["buttons"]["line2"]["type"]
-        buttonsMidiOctave = self._ctrlConfig["buttons"]["line2"]["octave"]
-        buttonsMidiValueOn = self._ctrlConfig["buttons"]["line2"]["valueOn"]
-        buttonsMidiValueOff = self._ctrlConfig["buttons"]["line2"]["valueOff"]
         
-        midiNote = midiNoteToNumber(buttonsMidiNotes[stripId],buttonsMidiOctave)
-        midiVelocity = buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
+        line = 2
+        buttonsMidiNotes  = self.ctrlConfig.getButtonNotes(line)
+        buttonsMidiType = self.ctrlConfig.getButtonType(line)
 
+        midiNote = midiFullNoteToNumber(buttonsMidiNotes[stripId])
+        midiVelocity = 127 #buttonsMidiValueOn if buttonValue else buttonsMidiValueOff
         msg = mido.Message(buttonsMidiType, note=midiNote, velocity=midiVelocity)
         print("Dispatching OSC: {} {} {} to MIDI: {}  ".format(address,stripId,buttonValue, msg))
         self.midiOUT.send(msg)
@@ -151,10 +144,10 @@ class OscToMidi:
         """
         bname = bname[0]
         
-        fNote  = midiFullNoteToNumber(self._ctrlConfig["fbuttons"][bname]["note"])
-        fVelocity = self._ctrlConfig["fbuttons"][bname]["valueOn"]
-        fChannel = self._ctrlConfig["fbuttons"][bname]["ch"]
-        fType = self._ctrlConfig["fbuttons"][bname]["type"]
+        fNote  = midiFullNoteToNumber(self.ctrlConfig.getfButtonNote(bname,"note"))
+        fVelocity = self.ctrlConfig.getfButtonNote(bname,"valueOn")
+        fChannel = self.ctrlConfig.getfButtonNote(bname,"ch")
+        fType = self.ctrlConfig.getfButtonNote(bname,"type")
 
         msg = mido.Message(fType, note=fNote, velocity=fVelocity, channel=fChannel)
         print("Dispatching OSC: {} (mapped to {}) to MIDI: {}  ".format(address,bname, msg))

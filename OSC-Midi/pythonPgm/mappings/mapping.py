@@ -17,10 +17,10 @@ class ControllerConfig:
         return self.ctrlConfig["fader"]["move"][k]
 
     def getButtonNotes(self, line):
-        return self.ctrlConfig["buttons"][line]["notes"]
+        return self.ctrlConfig["buttons"]["line{}".format(line)]["notes"]
     
     def getButtonType(self, line):
-        return self.ctrlConfig["buttons"][line]["type"]
+        return self.ctrlConfig["buttons"]["line{}".format(line)]["type"]
 
     def getfButtonNote(self,fname):
         return self.ctrlConfig["fbuttons"][fname]
@@ -32,6 +32,10 @@ class ControllerConfig:
         for fb in fButtonsName:
             allB.append(fButtons[fb]["note"])
         return allB
+    
+    def getfButtonNote(self, fButtonName, type):
+        return self.ctrlConfig["fbuttons"][fButtonName][type]
+
  
     def getBankButtonNotes(self):
         up = self.ctrlConfig["bank"]["up"]["note"]

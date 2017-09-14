@@ -76,7 +76,7 @@ class MidiToOSC:
             self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
 
         # NOTE ON
-        # TODO : toggle not on/off with one click
+        # TODO : toggle not on/off with one click with dbState
         if midiMessage.type == "note_on": #or midiMessage.type == "note_off":
             midiNote = midiNumberToFullNote(midiMessage.note)
             noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
@@ -102,6 +102,7 @@ class MidiToOSC:
             if(midiNote in faderNotes):
                 faderId = faderNotes.index(midiNote)
                 print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
+                #TODO select, once released: save into db
 
             # Encoder groups : only 2 of 4 are working... need investigation
             # Top right

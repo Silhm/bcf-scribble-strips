@@ -11,6 +11,10 @@ import sqlite3
 import mido
 from pythonosc import dispatcher
 from pythonosc import osc_server
+from pythonosc import osc_message_builder
+from pythonosc import udp_client
+
+
 
 from lib.midiHelper import *
 from lib.database import Database
@@ -42,6 +46,12 @@ class OscToMidi:
         """
         self.dispatcher = dispatcher.Dispatcher()
         self._routes()
+
+        oscClient = udp_client.UDPClient("127.0.0.1",3128 )
+        msg = osc_message_builder.OscMessageBuilder(address = "/set_surface/feedback")
+        msg.add_arg(4087)
+        oscClient.send(msg.build())
+
         server = osc_server.ThreadingOSCUDPServer(
                       (self.ipAddr, self.port), self.dispatcher)
         print("Serving on {}".format(server.server_address))

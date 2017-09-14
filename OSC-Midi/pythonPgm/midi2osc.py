@@ -64,8 +64,8 @@ class MidiToOSC:
         faderNotes = map(midiFullNoteToNumber, self.ctrlConfig.getFaderNotes())
         vPotNotes = self.ctrlConfig.getVpotButtonNotes()
         vPotCC = self.ctrlConfig.getVpotCC()
-        buttonNotes = self.ctrlConfig.getButtonNotes("line1")
-        buttonNotesl2 = self.ctrlConfig.getButtonNotes("line2")
+        buttonNotes = self.ctrlConfig.getButtonNotes(1) # line1
+        buttonNotesl2 = self.ctrlConfig.getButtonNotes(2) # line2
         
         fButtonNotes = self.ctrlConfig.getfButtonNotes()
         bankButtonNotes = self.ctrlConfig.getBankButtonNotes()
@@ -104,14 +104,12 @@ class MidiToOSC:
                 print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
 
             # Encoder groups : only 2 of 4 are working... need investigation
-            """
             # Top right
-            if(midNote == "A#4"):
+            if(midiNote == "A#4"):
                 self._handleEncoderGrpButtons("TopRight", noteOn)
             # Bottom right
             if(midiNote == "D#3"):
                 self._handleEncoderGrpButtons("BottomRight", noteOn)
-            """
            
             # Function Buttons
             if(midiNote in fButtonNotes):
@@ -190,9 +188,10 @@ class MidiToOSC:
         bank = self.db.getCurrentBank()
 
         if clicked and name == "up":
-            bank = self.db.bankUp()
-        elif clicked and name == "down" and self.bank >0:
-            bank = self.db.bankDown()
+            self.db.bankUp()
+        elif clicked and name == "down" and bank >0:
+            self.db.bankDown()
+        bank = self.db.getCurrentBank()
         print("       >> BANK "+str(bank))
 
 
@@ -219,11 +218,14 @@ class MidiToOSC:
         """
         bank = self.db.getCurrentBank()
         bankSize = self.db.getBankSize()
-
+        
+        vPotMode = self.db.getVpotMode()
+            
         vPotId = id + (bank * bankSize)
-        address = self.dawConfig.getVpotAddress(self.vPotMode)
 
-        val = 0.5 if self.vPotMode == "pan" else 666
+        address = self.dawConfig.getVpotAddress(vPotMode)
+
+        val = 0.5 if vPotMode == "pan" else 666
 
         values = [vPotId, val]
         self.sendOSCMessage(address, values)

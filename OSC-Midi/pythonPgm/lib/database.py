@@ -10,6 +10,9 @@ class Database:
     def getButtonMode(self):
         return self.db.controllerState.find_one()["buttons_mode"]
 
+    def getVpotMode(self):
+        return self.db.controllerState.find_one()["vpot_mode"]
+
     def setButtonMode(self, mode):
         self.db.controllerState.find_one_and_update( {}, {'$set': {'buttons_mode': mode}} )
 

@@ -29,7 +29,9 @@
        "address": "/strip/pan_stereo_position"
     },
     "select": {
-        "address":"/strip/select"
+        "address":"/strip/select",
+	"valueOn": 1,
+	"valueOff": 0
     }
   },
   "master": {

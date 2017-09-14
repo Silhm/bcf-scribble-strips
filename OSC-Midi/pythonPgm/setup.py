@@ -44,7 +44,7 @@ controllerState = db.controllerState
 
 defaultControllerState = {
             # 'gain' or 'pan'
-            "knob_mode" : "pan",
+            "vpot_mode" : "pan",
             # 'level' or '???'
             "fader_mode" : "level",
             # 'solomute' or 'selectrec'

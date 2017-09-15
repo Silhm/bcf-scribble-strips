@@ -20,7 +20,12 @@ from mappings.mapping import ControllerConfig, DawConfig
 
 class MidiToOSC:
 
-    def __init__(self, ipAddr, port ):
+    def __init__(self, ipAddr=None, port=None ):
+
+        self.db = Database()
+
+        ipAddr = self.db.getDawIpAddress() if not ipAddr else ipAddr
+        port = self.db.getDawPort() if not port else port
 
         # Init OSC client
         print("OSC will be sent on "+ipAddr+":"+str(port)) 
@@ -30,13 +35,14 @@ class MidiToOSC:
         midiPort = mido.get_input_names()[0]
         self.midiIN = mido.open_input(midiPort)
 
-        self.db = Database()
 
         # Get the DAW OSC configuration
         self.dawConfig = DawConfig(self.db.getDawName())
 
         # Get the Controller MIDI configuration
         self.ctrlConfig = ControllerConfig(self.db.getControllerName())
+
+        self._faderPos = {}
 
 
     def sendOSCMessage(self, address, values):
@@ -50,7 +56,7 @@ class MidiToOSC:
         for arg in values:
             msg.add_arg(arg)
 
-        print(" > > OSC: {} {}".format(address,values))
+        print(">        OSC: {} {}".format(address,values))
         self._oscClient.send(msg.build())
 
 
@@ -59,9 +65,9 @@ class MidiToOSC:
         """
         Route midi message to the correct OSC address
         """
-        print(" > route message: {}".format(midiMessage))
+        print("MIDI message: {}".format(midiMessage))
         
-        faderNotes = map(midiFullNoteToNumber, self.ctrlConfig.getFaderNotes())
+        faderNotes = self.ctrlConfig.getFaderNotes()
         vPotNotes = self.ctrlConfig.getVpotButtonNotes()
         vPotCC = self.ctrlConfig.getVpotCC()
         buttonNotes = self.ctrlConfig.getButtonNotes(1) # line1
@@ -71,19 +77,33 @@ class MidiToOSC:
         bankButtonNotes = self.ctrlConfig.getBankButtonNotes()
  
 
+        if midiMessage.type == "note_on":
+            midiNote = midiNumberToFullNote(midiMessage.note)
+
+
         # Fader moves : Pitchwheel 
         if midiMessage.type == "pitchwheel" :
             self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
+            faderValue = convertValueToOSCRange(midiMessage.pitch, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
+            self._faderPos[midiMessage.channel] = faderValue
+
+
+        # Fader touched
+        if(midiMessage.type == "note_on" and midiNote in faderNotes):
+            noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
+            faderId = faderNotes.index(midiNote)+1
+            print("Fader "+ str(faderId)+" touched! "+str(noteOn))
+            if noteOn == False:
+                #save the last pitchwheel know in db
+                self.db.setFaderPosition(faderId, self._faderPos[faderId])
+
 
         # NOTE ON
+        noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
         # TODO : toggle not on/off with one click with dbState
-        if midiMessage.type == "note_on": #or midiMessage.type == "note_off":
-            midiNote = midiNumberToFullNote(midiMessage.note)
-            noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
+        if noteOn: #or midiMessage.type == "note_off":
             if(midiMessage.velocity == 0):
                 return
-
-            print("Midi Note: {}".format(midiNote))
 
             # Buttons first and second line
             if(midiNote in buttonNotes):
@@ -98,11 +118,6 @@ class MidiToOSC:
                 vPotId = vPotNotes.index(midiNote)+1
                 self._handleVpotClick(vPotId, noteOn)
             
-            # Fader touched
-            if(midiNote in faderNotes):
-                faderId = faderNotes.index(midiNote)
-                print("Fader "+ str(faderId+1)+" touched! "+str(noteOn))
-                #TODO select, once released: save into db
 
             # Encoder groups : only 2 of 4 are working... need investigation
             # Top right
@@ -140,8 +155,8 @@ class MidiToOSC:
         msg = self.midiIN.receive()
         self.routeMessage(msg)
 
-        self.read()
-
+        return msg
+        
 
     def _handleButtons(self, line, bId, noteOn):
         """
@@ -163,7 +178,7 @@ class MidiToOSC:
         """
         Handle the Encoder groups button (only top and bottom right)
         """
-        #TODO: write this in database
+        # Write this in database
         if clicked and name == "TopRight" :
             self.db.setButtonMode("solomute")
         elif clicked and name == "BottomRight":
@@ -250,17 +265,18 @@ class MidiToOSC:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ip", default="127.0.0.1",
-        help="The ip of the OSC server")
-    parser.add_argument("--port", type=int, default=8000,
-        help="The port the OSC server is listening on")
+    parser.add_argument("--ip", default=None,
+        help="The ip of the DAW OSC server")
+    parser.add_argument("--port", type=int, default=None,
+        help="The port the DAW OSC is listening to")
     args = parser.parse_args()
-
 
     midiOSC = MidiToOSC(args.ip, args.port)
 
     # Read Midi
-    print("read midi input...")
-    midiOSC.read()
+    print("Read midi input...")
+
+    while midiOSC.read():
+        pass
 
 

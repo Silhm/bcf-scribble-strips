@@ -59,8 +59,8 @@ dawSession = db.dawSession
 
 defaultDawSession = {
         "sessionName": "default Session",
-        "strips" : [
-            {
+        "strips" : {
+            "1": {
                 "id": 1,
                 "name": "track 1",
                 "fader" : 0,
@@ -72,7 +72,7 @@ defaultDawSession = {
                 "select": True,
                 "polarity": False
             }
-         ],
+         },
         "master" : {
             "fader" : 0,
             "gain": 0,

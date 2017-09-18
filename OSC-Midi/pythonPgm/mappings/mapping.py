@@ -105,8 +105,10 @@ class DawConfig:
 
 
     def getVpotAddress(self, controllerVpotMode):
-        return self.dawConfig["strip"]["panStereoPosition" if controllerVpotMode == "pan" else "gain"]["address"]
+        return self.dawConfig["strip"][controllerVpotMode]["address"]
 
     def getFaderOSCRange(self):
         return self.dawConfig["strip"]["fader"]["valueRange"]
 
+    def getvPotOSCRange(self, vPotMode):
+        return self.dawConfig["strip"][vPotMode]["valueRange"]

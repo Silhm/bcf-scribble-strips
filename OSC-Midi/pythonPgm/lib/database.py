@@ -20,6 +20,12 @@ class Database:
             "polarity": False
         }
     
+    def _createNewStrip(self, sId):
+        strip = self._defaultStrip
+        strip["id"] = sId
+        strip["name"] = "track {}".format(sId)
+        self.db.dawStrip.insert_one(strip)
+        return strip
 
 
 
@@ -37,6 +43,9 @@ class Database:
         return self.db.controllerState.find_one()["vpot_mode"]
 
     def setButtonMode(self, mode):
+        """
+        Set the button Mode: "solomute" or "selectrec"
+        """
         self.db.controllerState.find_one_and_update( {}, {'$set': {'buttons_mode': mode}} )
 
 
@@ -61,17 +70,113 @@ class Database:
         self.db.controllerState.find_one_and_update( {}, {'$inc': {'bank': -1}} )
 
     def setFaderPosition(self, faderId, faderPos):
-        stripKey = "strips.{}.id".format(faderId)
-        stripFaderKey = "strips.{}.fader".format(faderId)
-
-        strip = self.db.dawSession.find_one( { stripKey: faderId } )
+        """
+        Save the last known fader Position for a given track
+        """
+        strip = self.db.dawStrip.find_one( { "id": faderId } )
         if not strip:
             newStrip = self._defaultStrip
             newStrip["id"] = faderId
             newStrip["name"] = "track {}".format(faderId)
-            key = "strips.{}".format(faderId)
+            newStrip["fader"] = faderPos
             
-            self.db.dawSession.find_one_and_update( {}, {'$set': { key : newStrip } } )
+            self.db.dawStrip.insert_one(newStrip)
+        else:
+            self.db.dawSession.find_one_and_update( { "id": faderId }, {'$set': { "fader" : faderPos}} )    
+ 
+ 
+    def setPanPosition(self, knobId, panPos):
+        """
+        Save the last known pan Position for a given track
+        """
+        strip = self.db.dawStrip.find_one( { "id": knobId } )
+        if not strip:
+            newStrip = self._defaultStrip
+            newStrip["id"] = knobId
+            newStrip["name"] = "track {}".format(knobId)
+            newStrip["pan"] = panPos
+            
+            self.db.dawStrip.insert_one(newStrip)
+        else:
+            self.db.dawSession.find_one_and_update( { "id": faderId }, {'$set': { "pan" : panPos}} )    
 
-        self.db.dawSession.find_one_and_update( { stripKey: faderId }, {'$set': { stripFaderKey : faderPos}} )    
+
+    def setGainPosition(self, knobId, gainPos):
+        """
+        Save the last known gain Position for a given track
+        """
+        strip = self.db.dawStrip.find_one( { "id": knobId } )
+        if not strip:
+            newStrip = self._defaultStrip
+            newStrip["id"] = knobId
+            newStrip["name"] = "track {}".format(knobId)
+            newStrip["pan"] = gainPos
+            
+            self.db.dawStrip.insert_one(newStrip)
+        else:
+            self.db.dawSession.find_one_and_update( { "id": faderId }, {'$set': { "pan" : gainPos}} )    
+
+
+    def getButtonState(self, line, bId, buttonMode):
+        """
+        Get the button State according to params
+        """
+        param = "select"
+        if line == 1:
+            param = "solo" if buttonMode == "solomute" else "select"
+        elif line == 2:
+            param = "mute" if buttonMode == "solomute" else "rec"
+
+        strip = self.db.dawStrip.find_one( {"id" : bId} )
+        
+        print ("bId: {} line: {}, buttonMode: {}".format(bId, line, buttonMode))
+        print ("strip: {}".format(strip))
+
+        if not strip:
+            return False
+        else:
+            return bool(strip[param])
+
+
+    def setButtonState(self, line, bId, buttonMode, value):
+        """
+        Set the button State according to params
+        """
+        param = "select"
+        if line == 1:
+            param = "solo" if buttonMode == "solomute" else "select"
+        elif line == 2:
+            param = "mute" if buttonMode == "solomute" else "rec"
+
+        strip = self.db.dawStrip.find_one( {"id" : bId} )
+        if not strip:
+            strip = self._createNewStrip(bId)
+        
+        self.db.dawStrip.find_one_and_update( { "id": bId }, {'$set': { param : bool(value)}} )
+
+
+
+    def getvPotValue(self, vPotId, vPotMode):
+        """
+        Get the vPot in db according to mode
+        """
+        strip = self.db.dawStrip.find_one( {"id" : vPotId} )
+        if not strip:
+            strip = self._createNewStrip(vPotId)
+
+        return strip[vPotMode]
+
+
+    def setvPotValue(self, vPotId, vPotMode, value):
+        """
+        Set the vPot in db according to mode
+        """
+        strip = self.db.dawStrip.find_one( {"id" : vPotId} )
+        if not strip:
+            strip = self._createNewStrip(vPotId)
+
+        self.db.dawStrip.find_one_and_update( { "id": vPotId }, {'$set': { vPotMode : value}} )
+
+        print("vPotId: {} vPotMode: {}".format(vPotId,vPotMode))
+
 

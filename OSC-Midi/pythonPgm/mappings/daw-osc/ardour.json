@@ -7,7 +7,8 @@
       "valueRange":  [0,1]
     },
     "gain": {
-        "address":"/strip/gain"
+        "address":"/strip/gain",
+        "valueRange":  [0,1]
     },
     "mute": {
         "address": "/strip/mute",
@@ -25,8 +26,9 @@
 	"valueOff": 0
     },
     "polarity": "/strip/polarity",
-    "panStereoPosition": {
-       "address": "/strip/pan_stereo_position"
+    "pan": {
+       "address": "/strip/pan_stereo_position",
+       "valueRange":  [0,1]
     },
     "select": {
         "address":"/strip/select",

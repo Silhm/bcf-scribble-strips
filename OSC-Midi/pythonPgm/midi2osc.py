@@ -164,10 +164,17 @@ class MidiToOSC:
         """
         buttonMode = self.db.getButtonMode()
         address = self.dawConfig.getButtonAddress(line, buttonMode)
-        value = self.dawConfig.getButtonValue(line, buttonMode, noteOn)
 
         bank = self.db.getCurrentBank()
         bankSize = self.db.getBankSize()
+
+        # Handle toggle state by getting current state in DB
+        dbVal = self.db.getButtonState(line, bId, buttonMode)
+        value = self.dawConfig.getButtonValue(line, buttonMode, not dbVal)
+
+        # Save it in the database:
+        self.db.setButtonState(line, bId, buttonMode, value)
+
 
         buttonId = (bId +1)+ bank*bankSize
         values = [buttonId, value]
@@ -218,7 +225,7 @@ class MidiToOSC:
         bank = self.db.getCurrentBank()
         bankSize = self.db.getBankSize()
 
-        faderId = (ch + 1) + bank*bankSize
+        faderId = ch  + bank*bankSize
         
         faderValue = convertValueToOSCRange(value, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
 
@@ -243,6 +250,8 @@ class MidiToOSC:
 
         val = 0.5 if vPotMode == "pan" else 666
 
+        self.db.setPanPosition(vPotId, val)
+
         values = [vPotId, val]
         self.sendOSCMessage(address, values)
  
@@ -255,12 +264,33 @@ class MidiToOSC:
         bankSize = self.db.getBankSize()
 
         vPotId = id + (bank * bankSize)
-        #address = self.dawConfig.getVpotAddress(self.vPotMode)
         rotation = self.ctrlConfig.getVpotRotation(value)
 
-        print("pot Rot {} {}".format(id,rotation))
-        # TODO: need to handle rotation
-       
+        # > get the pot mode first
+        vPotMode = self.db.getVpotMode()
+        address = self.dawConfig.getVpotAddress(vPotMode)
+        valueRange = self.dawConfig.getvPotOSCRange(vPotMode)
+        # > Get the last Position known for this vPot (according to mode)
+        currentVal = self.db.getvPotValue(id, vPotMode)
+        # > change it according to direction and speed
+        direction = 1 if rotation[0]=="CW" else -1
+        speed= rotation[1]
+        _speeds = [10, 3, 2, 1]
+
+        newVal = currentVal + (direction * (pow(10, -1 * _speeds[speed]  )))
+        if newVal > valueRange[1]:
+            newVal = valueRange[1]
+        if newVal < valueRange[0]:
+            newVal = valueRange[0]
+
+        # > Save it to the database
+        self.db.setvPotValue(id, vPotMode, newVal)
+        
+        values = [id,newVal]
+        # > Send it as OSC message!
+        self.sendOSCMessage(address, values)
+
+
 
 
 if __name__ == "__main__":

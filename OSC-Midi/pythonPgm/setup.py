@@ -59,20 +59,6 @@ dawSession = db.dawSession
 
 defaultDawSession = {
         "sessionName": "default Session",
-        "strips" : {
-            "1": {
-                "id": 1,
-                "name": "track 1",
-                "fader" : 0,
-                "gain": 0,
-                "pan": 0.5,
-                "mute": False,
-                "solo": False,
-                "rec": False,
-                "select": True,
-                "polarity": False
-            }
-         },
         "master" : {
             "fader" : 0,
             "gain": 0,
@@ -86,5 +72,24 @@ defaultDawSession = {
         }
 }
 
-dawSession.insert_one(defaultDawSession)
+
+dawStrips = db.dawStrip
+dawStrips.create_index("id", unique=True)
+
+defaultDawStrip = {
+                "id": 1,
+                "name": "track 1",
+                "fader" : 0,
+                "gain": 0,
+                "pan": 0.5,
+                "mute": False,
+                "solo": False,
+                "rec": False,
+                "select": True,
+                "polarity": False
+}
+
+
+
+dawStrips.insert_one(defaultDawStrip)
 

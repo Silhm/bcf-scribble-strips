@@ -85,14 +85,14 @@ class MidiToOSC:
         if midiMessage.type == "pitchwheel" :
             self._handlePitchWheel(midiMessage.channel, midiMessage.pitch)
             faderValue = convertValueToOSCRange(midiMessage.pitch, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
-            self._faderPos[midiMessage.channel] = faderValue
+            self._faderPos[midiMessage.channel+1] = faderValue
 
 
         # Fader touched
         if(midiMessage.type == "note_on" and midiNote in faderNotes):
             noteOn = midiMessage.type == "note_on" and midiMessage.velocity == 127
             faderId = faderNotes.index(midiNote)+1
-            print("Fader "+ str(faderId)+" touched! "+str(noteOn))
+            #print("Fader "+ str(faderId)+" touched! "+str(noteOn))
             if noteOn == False:
                 #save the last pitchwheel know in db
                 self.db.setFaderPosition(faderId, self._faderPos[faderId])
@@ -129,13 +129,11 @@ class MidiToOSC:
            
             # Function Buttons
             if(midiNote in fButtonNotes):
-                print("Function button!")
                 fId = "F{}".format(fButtonNotes.index(midiNote)+1)
                 self._handleFunctionButtons(fId, noteOn)
             
             # Preset / Bank buttons
             if(midiNote in bankButtonNotes):
-                print("button!")
                 updown = "up" if bankButtonNotes.index(midiNote) == 0 else "down"
                 self._handleBankButtons(updown, noteOn)
 
@@ -207,7 +205,6 @@ class MidiToOSC:
         """
         Handle bank buttons
         """
-        print("Bank" + str(name) +" "+str(clicked))
         bank = self.db.getCurrentBank()
 
         if clicked and name == "up":
@@ -230,7 +227,7 @@ class MidiToOSC:
         faderValue = convertValueToOSCRange(value, self.dawConfig.getFaderOSCRange(), self.ctrlConfig.getFaderMidiRange())
 
         address = self.dawConfig.getFaderAddress()
-        values = [faderId, faderValue]
+        values = [faderId+1, faderValue]
     
         self.sendOSCMessage(address, values)
 
@@ -250,7 +247,7 @@ class MidiToOSC:
 
         val = 0.5 if vPotMode == "pan" else 666
 
-        self.db.setPanPosition(vPotId, val)
+        self.db.setvPotValue(vPotId, vPotMode, val)
 
         values = [vPotId, val]
         self.sendOSCMessage(address, values)
@@ -274,10 +271,10 @@ class MidiToOSC:
         currentVal = self.db.getvPotValue(id, vPotMode)
         # > change it according to direction and speed
         direction = 1 if rotation[0]=="CW" else -1
-        speed= rotation[1]
-        _speeds = [10, 3, 2, 1]
+        speed= rotation[1] if rotation[1]>1 else 1
+        _speeds = [10, 3, 2, 2, 1, 1, 1, 1, 1 , 1]
 
-        newVal = currentVal + (direction * (pow(10, -1 * _speeds[speed]  )))
+        newVal = currentVal + (direction * 5 * (pow(10, -1 * _speeds[speed]  )))
         if newVal > valueRange[1]:
             newVal = valueRange[1]
         if newVal < valueRange[0]:

@@ -74,7 +74,7 @@ defaultDawSession = {
 
 
 dawStrips = db.dawStrip
-dawStrips.create_index("id", unique=True)
+#dawStrips.create_index("id", unique=True)
 
 defaultDawStrip = {
                 "id": 1,

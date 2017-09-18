@@ -21,11 +21,16 @@ class Database:
         }
     
     def _createNewStrip(self, sId):
-        strip = self._defaultStrip
+        dbStrip = self.db.dawStrip.find_one({'id':sId})
+        strip = self._defaultStrip.copy()
         strip["id"] = sId
         strip["name"] = "track {}".format(sId)
-        self.db.dawStrip.insert_one(strip)
-        return strip
+
+        if(dbStrip):
+            return dbStrip
+        else:
+            self.db.dawStrip.insert_one(strip)
+            return strip
 
 
 
@@ -98,7 +103,7 @@ class Database:
             
             self.db.dawStrip.insert_one(newStrip)
         else:
-            self.db.dawSession.find_one_and_update( { "id": faderId }, {'$set': { "pan" : panPos}} )    
+            self.db.dawSession.find_one_and_update( { "id": knobId }, {'$set': { "pan" : panPos}} )    
 
 
     def setGainPosition(self, knobId, gainPos):
@@ -129,13 +134,14 @@ class Database:
 
         strip = self.db.dawStrip.find_one( {"id" : bId} )
         
-        print ("bId: {} line: {}, buttonMode: {}".format(bId, line, buttonMode))
-        print ("strip: {}".format(strip))
-
         if not strip:
-            return False
-        else:
-            return bool(strip[param])
+            strip = self._defaultStrip
+            strip["id"] = bId
+            strip["name"] = "track {}".format(bId)
+
+            self.db.dawStrip.insert_one(strip)
+            
+        return bool(strip[param])
 
 
     def setButtonState(self, line, bId, buttonMode, value):
@@ -176,7 +182,4 @@ class Database:
             strip = self._createNewStrip(vPotId)
 
         self.db.dawStrip.find_one_and_update( { "id": vPotId }, {'$set': { vPotMode : value}} )
-
-        print("vPotId: {} vPotMode: {}".format(vPotId,vPotMode))
-
 

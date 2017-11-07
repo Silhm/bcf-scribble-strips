@@ -39,6 +39,10 @@ class OscToMidi:
         # Get the Controller MIDI configuration
         self.ctrlConfig = ControllerConfig(self.db.getControllerName())
 
+        # client to send feedback request
+        self._oscClient = udp_client.UDPClient('10.0.0.42',3819)
+
+
         
     def waitForOscMessage(self):
         """
@@ -47,10 +51,16 @@ class OscToMidi:
         self.dispatcher = dispatcher.Dispatcher()
         self._routes()
 
-        oscClient = udp_client.UDPClient("127.0.0.1",3128 )
         msg = osc_message_builder.OscMessageBuilder(address = "/set_surface/feedback")
-        msg.add_arg(4087)
-        oscClient.send(msg.build())
+        msg.add_arg(4095)
+        self._oscClient.send(msg.build())
+        print("Sending {}".format(msg.address))
+
+
+        msg = osc_message_builder.OscMessageBuilder(address = "/strip/fader")
+        msg.add_arg(1)
+        msg.add_arg(1)
+        self._oscClient.send(msg.build())
 
         server = osc_server.ThreadingOSCUDPServer(
                       (self.ipAddr, self.port), self.dispatcher)
@@ -66,6 +76,9 @@ class OscToMidi:
         """
         dc = self.dawConfig
         buttonMode = self.db.getButtonMode()
+
+        self.dispatcher.map("/heartbeat", print)
+
 
         # Faders
         self.dispatcher.map(dc.getFaderAddress(), self._dispatchFader)

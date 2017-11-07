@@ -23,7 +23,7 @@ dawConfig = db.dawConfig
 defaultDawConfig = {
         "dawName": "ardour",
         "ip": "127.0.0.1",
-        "port": 3128
+        "port": 3819
         }
 
 dawConfig.insert_one(defaultDawConfig)

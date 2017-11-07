@@ -28,8 +28,12 @@ class MidiToOSC:
         port = self.db.getDawPort() if not port else port
 
         # Init OSC client
-        print("OSC will be sent on "+ipAddr+":"+str(port)) 
+        print("OSC will be sent to "+ipAddr+":"+str(port)) 
         self._oscClient = udp_client.UDPClient(ipAddr, port)
+
+        self.sendOSCMessage("/set_surface/feedback",[4095])
+
+
 
         # Init Midi client and display available devices
         midiPort = mido.get_input_names()[0]

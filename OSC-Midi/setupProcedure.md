@@ -30,6 +30,9 @@ sudo dpkg -i kxstudio-repos_9.4.6~kxstudio1_all.deb
 sudo apt-get install git python3 python3-dev virtualenv mongodb build-essential libasound2-dev alsa-utils jackd2 
 sudo apt-get install libjack-dev
 
+# dependancies for griffin powermate as jog wheel
+sudo apt-get install evrouter
+
 # enable mod usb midi
 insmod /lib/modules/3.4.39/snd-usbmidi-lib.ko
 insmod /lib/modules/3.4.39/snd-hwdep.ko 

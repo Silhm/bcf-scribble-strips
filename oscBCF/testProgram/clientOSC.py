@@ -39,6 +39,9 @@ if __name__ == "__main__":
 
   strip = 1
   buttonOn = 1
+
+  print("Sending at {}:{}".format(args.ip, args.port))
+
   for i in range(100):
     
     stripMsg = osc_message_builder.OscMessageBuilder(address = "/strip/fader")

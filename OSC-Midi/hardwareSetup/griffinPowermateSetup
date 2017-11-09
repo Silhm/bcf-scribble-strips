@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo '"Griffin PowerMate" "/dev/input/by-id/usb-Griffin_Technology__Inc._Griffin_PowerMate-event-if00" none rel/7/-1 "XKey/KP_Left"' > evrouterrc
+echo '"Griffin PowerMate" "/dev/input/by-id/usb-Griffin_Technology__Inc._Griffin_PowerMate-event-if00" none rel/7/1 "XKey/KP_Right"' >> evrouterrc
+echo '"Griffin PowerMate" "/dev/input/by-id/usb-Griffin_Technology__Inc._Griffin_PowerMate-event-if00" none key/256 "XButton/2"' >> evrouterrc
+
+sudo evrouter -c evrouterrc /dev/input/by-id/usb-Griffin_Technology__Inc._Griffin_PowerMate-event-if00
